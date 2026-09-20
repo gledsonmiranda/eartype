@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Practice With Video',
+  title: 'Eartype',
   description: 'Treino de listening por ditado com vídeos do YouTube.',
 };
 

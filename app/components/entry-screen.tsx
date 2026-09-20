@@ -129,7 +129,7 @@ export function EntryScreen({ onStart }: EntryScreenProps) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Practice With Video</h1>
+        <h1 className="text-2xl font-semibold">Eartype</h1>
         <p className="text-sm text-zinc-400">
           Cole a URL de um vídeo do YouTube. O vídeo toca em trechos curtos, pausa, e você digita o
           que ouviu.

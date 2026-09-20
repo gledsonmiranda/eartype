@@ -1,173 +1,174 @@
-# Practice With Video
+# Eartype
 
-Treinador de listening por **ditado**. Você cola a URL de um vídeo do YouTube; o
-app corta a legenda em trechos de 3 a 8 segundos, toca um trecho, **pausa
-exatamente no fim dele**, e compara o que você digitou com a legenda real,
-palavra por palavra.
+A listening trainer built on **dictation**. You paste a YouTube URL; the app
+cuts the captions into 3-to-8-second segments, plays one, **pauses exactly at
+its end**, and compares what you typed against the real caption, word by word.
 
-A ideia é simples: entender um vídeo com legenda ligada é fácil e engana. Digitar
-o que você ouviu não perdoa — ou a palavra chegou ao seu ouvido, ou não chegou.
+The idea is simple: understanding a video with the subtitles on is easy, and it
+lies to you. Typing what you heard does not forgive — either the word reached
+your ear or it did not.
 
-Ferramenta pessoal, roda em `localhost`. Português na documentação, inglês no
-código.
+Personal tool, runs on `localhost`. The interface is in Portuguese; code, docs
+and commits are in English.
 
-## Como funciona
+## How it works
 
 ```
-URL  →  legenda (yt-dlp, ou colada à mão)  →  cues  →  trechos praticáveis
-                                                            ↓
-   diff palavra a palavra  ←  o que você digitou  ←  toca e pausa no fim
+URL  →  captions (yt-dlp, or pasted by hand)  →  cues  →  practisable segments
+                                                              ↓
+   word-by-word diff  ←  what you typed  ←  plays and pauses at the end
 ```
 
-Cinco decisões moldam o resto:
+Five decisions shape everything else:
 
-- **A pausa é por polling.** A IFrame API do YouTube não avisa "cheguei no tempo
-  X", então o app lê `getCurrentTime()` a cada 100ms e pausa ao cruzar a marca.
-  Medido: para **~64ms depois** do alvo, com desvio de ±8ms. Pausar cedo cortaria
-  a última sílaba, então não há compensação — 64ms tarde cai no silêncio entre
-  frases.
-- **A correção é tolerante por padrão.** Caixa e pontuação não contam; `"I'm
-  gonna go"` e `"I am going to go"` são a mesma resposta. Modo estrito é um
-  checkbox, oferecido só quando a legenda é manual e tem pontuação para cobrar.
-- **A legenda crua não serve como está.** Cue de 0,8s, cue que fica 20s na tela
-  depois de a fala acabar, `[Music]`, `>>`, e o *rolling text* da legenda
-  auto-gerada (o YouTube repete a linha anterior no cue seguinte). O segmentador
-  existe para isso.
-- **Colar a legenda à mão é caminho de primeira classe**, não tela de erro. É a
-  única rota que não depende de um endpoint não documentado continuar de pé.
-- **A transcrição fica ao lado, borrada.** Cada trecho sai do blur quando você o
-  responde, então o painel preenchido é o seu progresso — e um botão desliga o
-  blur inteiro quando você preferir ler acompanhando.
+- **The pause is polled.** The YouTube IFrame API never says "I reached time X",
+  so the app reads `getCurrentTime()` every 100ms and pauses on crossing the
+  mark. Measured: it stops **~64ms late**, with ±8ms of spread. Pausing early
+  would clip the last syllable, so there is no compensation — 64ms late lands in
+  the silence between sentences.
+- **Correction is lenient by default.** Case and punctuation do not count;
+  `"I'm gonna go"` and `"I am going to go"` are the same answer. Strict mode is
+  a checkbox, offered only when the captions are manual and have punctuation
+  worth enforcing.
+- **Raw captions are unusable as they come.** A 0.8s cue, a cue that lingers 20s
+  after the speech ended, `[Music]`, `>>`, and the *rolling text* of
+  auto-generated captions (YouTube repeats the previous line in the next cue).
+  The segmenter exists for that.
+- **Pasting captions by hand is a first-class path**, not an error screen. It is
+  the only route that does not depend on an undocumented endpoint staying up.
+- **The transcript sits alongside, blurred.** Each segment leaves the blur when
+  you answer it, so the filled-in panel is your progress — and one button lifts
+  the blur entirely when you would rather read along.
 
-## Rodando
+## Running
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm run check    # typecheck + lint + testes — o que roda antes de commitar
-npm test         # só os testes
-npm run corpus   # baixa as legendas reais que um dos testes usa (opcional)
+npm run check    # typecheck + lint + tests — what runs before a commit
+npm test         # tests only
+npm run corpus   # downloads the real captions one of the tests uses (optional)
 ```
 
-Na tela de prática a mão não precisa sair do teclado:
+On the practice screen your hands never have to leave the keyboard:
 
-| atalho | ação |
+| shortcut | action |
 | --- | --- |
-| `Enter` | verifica; depois de errar, aceita e segue |
-| `Shift+Enter` | quebra linha |
-| `Ctrl+Enter` | repete o trecho |
-| `Ctrl+→` | revela a resposta e segue |
-| `Alt+←` / `Alt+→` | trecho anterior / próximo |
+| `Enter` | check; after a miss, accept and move on |
+| `Shift+Enter` | line break |
+| `Ctrl+Enter` | replay the segment |
+| `Ctrl+→` | reveal the answer and move on |
+| `Alt+←` / `Alt+→` | previous / next segment |
 
-Acertou em cheio, aparece **"✓ acertou"** e o trecho avança sozinho em 1,2s.
+Get it exactly right and **"✓ acertou"** appears; the segment advances on its
+own after 1.2s.
 
-## Pré-requisito externo: `yt-dlp`
+## External prerequisite: `yt-dlp`
 
-A busca automática de legenda depende do binário **`yt-dlp`**. Chamadas em Node
-puro estão bloqueadas pelo YouTube (200 com corpo vazio — ver
-`docs/SPIKE-RESULTS.md`), e o `yt-dlp` como processo filho é hoje a única rota
-automática que funciona.
+Automatic caption lookup depends on the **`yt-dlp`** binary. Plain Node calls are
+blocked by YouTube (200 with an empty body — see `docs/SPIKE-RESULTS.md`), and
+`yt-dlp` as a child process is currently the only automatic route that works.
 
 ```bash
-pipx install yt-dlp          # recomendado
-pip install --user yt-dlp    # alternativa
-yt-dlp -U                    # de vez em quando, quando o YouTube mudar
+pipx install yt-dlp          # recommended
+pip install --user yt-dlp    # alternative
+yt-dlp -U                    # every so often, whenever YouTube changes
 ```
 
-No Windows o executável costuma cair fora do `PATH`. Aponte o caminho num
-`.env.local` (o Next carrega sozinho, e o arquivo não vai para o git):
+On Windows the executable usually lands outside `PATH`. Point at it from a
+`.env.local` (Next loads it on its own, and the file stays out of git):
 
 ```
-YT_DLP_PATH=C:\Users\voce\AppData\Roaming\Python\Python312\Scripts\yt-dlp.exe
+YT_DLP_PATH=C:\Users\you\AppData\Roaming\Python\Python312\Scripts\yt-dlp.exe
 ```
 
-O `yt-dlp` também precisa de um **runtime JavaScript**; o app passa
-`--js-runtimes node`, e o Node você já tem. Versões antigas que não conhecem a
-opção funcionam igual — o app repete a chamada sem ela.
+`yt-dlp` also needs a **JavaScript runtime**; the app passes `--js-runtimes
+node`, and you already have Node. Older versions that do not know the option
+work all the same — the app retries the call without it.
 
-**Sem `yt-dlp` o app continua utilizável:** dá para colar a legenda SRT/VTT à
-mão, na mesma tela de entrada.
+**Without `yt-dlp` the app stays usable:** you can paste SRT/VTT captions by
+hand, on the same entry screen.
 
 ### Cache
 
-Cada busca custa ~3s e conta contra o rate limit do YouTube, então a legenda é
-guardada em memória e em `.cache/transcripts/` (fora do git) por 30 dias.
-`TRANSCRIPT_CACHE=off` desliga o cache em disco; `?force=1` na rota refaz a
-busca.
+Each lookup costs ~3s and counts against YouTube's rate limit, so captions are
+kept in memory and in `.cache/transcripts/` (outside git) for 30 days.
+`TRANSCRIPT_CACHE=off` disables the on-disk cache; `?force=1` on the route
+repeats the lookup.
 
-> Se o YouTube responder **`Sign in to confirm you're not a bot`**, o IP levou um
-> bloqueio temporário por excesso de requisições. Não há o que consertar: espere
-> alguns minutos ou cole a legenda à mão. O app trata isso como um erro próprio
-> (`rate-limited`), distinto de "vídeo sem legenda".
+> If YouTube answers **`Sign in to confirm you're not a bot`**, the IP took a
+> temporary block for too many requests. There is nothing to fix: wait a few
+> minutes or paste the captions by hand. The app treats this as an error of its
+> own (`rate-limited`), distinct from "video has no captions".
 
-## Estrutura
+## Structure
 
 ```
 app/
-  api/transcript/      rota que dispara o yt-dlp
-  components/          telas e componentes (client)
+  api/transcript/      route that shells out to yt-dlp
+  components/          screens and components (client)
 lib/
-  captions/            parser SRT/VTT e segmentador
-  correction/          normalização e diff palavra a palavra
-  player/              pausa por polling (puro) + IFrame API (DOM)
-  practice/            estado da sessão de prática
-  youtube/             parse de URL e busca de legenda
-types/                 contratos compartilhados (Cue, Segment, DiffResult)
-tests/                 Vitest, espelhando a árvore de lib/
-scripts/               utilitários de desenvolvimento
-docs/                  SPEC (o quê), PLAN (em que ordem), SPIKE-RESULTS, DESIGN
+  captions/            SRT/VTT parser and segmenter
+  correction/          normalization and word-by-word diff
+  player/              polled pause (pure) + IFrame API (DOM)
+  practice/            practice session state
+  youtube/             URL parsing and caption lookup
+types/                 shared contracts (Cue, Segment, DiffResult)
+tests/                 Vitest, mirroring the lib/ tree
+scripts/               development utilities
+docs/                  SPEC (what), PLAN (in what order), SPIKE-RESULTS, DESIGN
 ```
 
-A regra que sustenta o desenho: **`lib/` não conhece React, DOM nem YouTube** —
-exceto `lib/player/youtube-iframe.ts`, que existe justamente para isolar o que só
-o browser resolve. É por isso que os testes rodam em ~2s sem tocar na rede.
+The rule holding the design up: **`lib/` knows nothing about React, the DOM or
+YouTube** — except `lib/player/youtube-iframe.ts`, which exists precisely to
+isolate what only the browser can solve. That is why the tests run in ~2s
+without touching the network.
 
-## Testes
+## Tests
 
-335 testes, todos offline. O que é lógica pura — parser, segmentador,
-normalização, diff, sessão — é testado direto; o player roda sob *fake timers*
-com um player falso; a busca de legenda injeta o executor de comando, então nem
-binário nem vídeo são necessários.
+335 tests, all offline. Whatever is pure logic — parser, segmenter,
+normalization, diff, session — is tested directly; the player runs under *fake
+timers* against a fake player; caption lookup injects the command executor, so
+neither the binary nor a video is needed.
 
-Um teste é diferente: `tests/captions/segmenter-corpus.test.ts` roda
-**invariantes sobre cinco legendas reais** (manual, auto-gerada, vídeo de 1h26,
-canal pequeno, vídeo com suspeita de restrição) — nenhum trecho abaixo de 1,5s,
-nenhum acima de 8s, nenhuma fronteira repetindo 3 palavras, nenhuma marcação
-sobrando.
+One test is different: `tests/captions/segmenter-corpus.test.ts` runs
+**invariants over five real caption files** (manual, auto-generated, a 1h26
+video, a small channel, a video suspected of being restricted) — no segment
+under 1.5s, none over 8s, no boundary repeating 3 words, no leftover markup.
 
-Essas legendas são conteúdo de terceiro e **não estão no git**; versionados são
-só os `videoId`. `npm run corpus` as baixa. Sem elas a suíte se declara ignorada
-em vez de reprovar um clone limpo.
+Those captions are third-party content and are **not in git**; only the
+`videoId`s are versioned. `npm run corpus` downloads them. Without them the
+suite declares itself skipped rather than failing a clean clone.
 
-Elas ganharam esse lugar na marra: escritas a partir da spec, as fixtures
-pequenas passavam verdes enquanto legenda real derrubava quatro invariantes do
-segmentador de uma vez.
+They earned their place the hard way: written from the spec, the small fixtures
+stayed green while real captions broke four segmenter invariants at once.
 
-## Estado
+## Status
 
-**Fase 1 (MVP) completa**, verificada no navegador: colar a URL e fazer dez
-trechos seguidos sem tocar no mouse. Sem persistência — fechou a aba, perdeu a
-sessão.
+**Phase 1 (MVP) complete**, verified in the browser: paste the URL and do ten
+segments in a row without touching the mouse. No persistence — close the tab and
+the session is gone.
 
-O que vem depois está no §11 da `docs/SPEC.md`: retomar de onde parou, resumo de
-sessão com as palavras mais problemáticas, controle de velocidade, hints e modo
-revisão.
+What comes next lives in §11 of `docs/SPEC.md`: resuming where you left off, a
+session summary with the most troublesome words, speed control, hints and a
+review mode.
 
-Limitações conhecidas de hoje:
+Known limitations today:
 
-- só busca a faixa `en` exata — um vídeo cujo único inglês seja `en-US` cai no
-  caminho de colar à mão (pedir mais de uma faixa toma 429);
-- manual x auto-gerada é detectado pela presença de marcas de tempo por palavra,
-  o que é heurística;
-- quando a legenda auto-gerada reescreve a própria transcrição, a repetição
-  escapa do dedupe em ~0,5% dos trechos;
-- a fiação React não tem teste automatizado — foi verificada à mão.
+- it only asks for the exact `en` track — a video whose only English is `en-US`
+  falls through to the paste-by-hand path (asking for more than one track earns
+  a 429);
+- manual vs. auto-generated is detected by the presence of per-word timings,
+  which is a heuristic;
+- when auto-generated captions rewrite their own transcript, the repetition
+  escapes the dedupe in ~0.5% of segments;
+- the React wiring has no automated test — it was verified by hand.
 
-## Documentação
+## Documentation
 
-| arquivo | o que é |
+| file | what it is |
 | --- | --- |
-| `docs/SPEC.md` | o quê e por quê: requisitos, regras de normalização, riscos |
-| `docs/PLAN.md` | em que ordem, com "pronto quando" por tarefa |
-| `docs/SPIKE-RESULTS.md` | o que foi medido antes de escrever o app — e o que quebrou |
-| `docs/DESIGN.md` | escalas e padrões de interface |
+| `docs/SPEC.md` | what and why: requirements, normalization rules, risks |
+| `docs/PLAN.md` | in what order, with a "done when" per task |
+| `docs/SPIKE-RESULTS.md` | what was measured before writing the app — and what broke |
+| `docs/DESIGN.md` | interface scales and patterns |

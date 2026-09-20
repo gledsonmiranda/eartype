@@ -1,334 +1,334 @@
-# Spec — Practice With Video (dictation trainer)
+# Spec — Eartype (dictation trainer)
 
-> Status: **draft v1** · Data: 2026-09-20 · Autor: Gledson Miranda
-> Fase 1 (MVP) implementada — ver `PLAN.md` para o que cada tarefa entregou.
-
----
-
-## 1. Visão geral
-
-Ferramenta pessoal de estudo de inglês baseada em **ditado (dictation)**: você cola a URL de um vídeo do YouTube, o app carrega o vídeo e a legenda em inglês, e então reproduz o vídeo **em pedaços curtos**. Ao fim de cada pedaço o vídeo **pausa automaticamente** e só volta a tocar depois que você **digitar o que ouviu**. O app compara o que você escreveu com a legenda real, mostra palavra a palavra o que acertou/errou, e segue para o próximo trecho.
-
-O objetivo não é decorar o vídeo, é **treinar listening/compreensão**: forçar o ouvido a resolver connected speech, contrações, reduções e vocabulário em velocidade nativa.
-
-### 1.1 Princípios de produto
-1. **O loop é sagrado.** Ouvir → digitar → conferir → repetir. Tudo que não serve a esse loop é secundário.
-2. **Teclado primeiro.** A mão não deve sair do teclado durante uma sessão. Mouse é opcional.
-3. **Erro é informação, não punição.** O feedback mostra exatamente qual palavra falhou, não só "errado".
-4. **Ferramenta pessoal.** Single-user, roda local. Sem login, sem multi-tenant, sem analytics de terceiros.
-5. **Falha graciosa.** Vídeo sem legenda, legenda ruim ou embed bloqueado precisam dar uma mensagem clara, nunca uma tela branca.
-
-### 1.2 Fora de escopo (v1)
-- Contas de usuário, sincronização entre dispositivos, backend com banco.
-- Reconhecimento de fala (falar em vez de digitar).
-- Tradução para português, dicionário embutido, flashcards/SRS.
-- Outros idiomas além de inglês.
-- Outras fontes além do YouTube (Vimeo, arquivo local, serviços de streaming).
-- Mobile nativo (layout responsivo é desejável, mas digitar texto longo no celular não é o caso de uso).
+> Status: **draft v1** · Date: 2026-09-20 · Author: Gledson Miranda
+> Phase 1 (MVP) implemented — see `PLAN.md` for what each task delivered.
 
 ---
 
-## 2. Decisões já tomadas
+## 1. Overview
 
-| Tema | Decisão | Consequência |
+A personal English-study tool built on **dictation**: you paste a YouTube URL, the app loads the video and its English captions, and then plays the video **in short chunks**. At the end of each chunk the video **pauses automatically** and only resumes once you have **typed what you heard**. The app compares what you wrote against the real caption, shows word by word what you got right and wrong, and moves on to the next chunk.
+
+The goal is not to memorise the video, it is to **train listening/comprehension**: to force the ear to resolve connected speech, contractions, reductions and vocabulary at native speed.
+
+### 1.1 Product principles
+1. **The loop is sacred.** Listen → type → check → repeat. Anything that does not serve that loop is secondary.
+2. **Keyboard first.** Your hands should not leave the keyboard during a session. The mouse is optional.
+3. **A mistake is information, not punishment.** The feedback shows exactly which word failed, not just "wrong".
+4. **A personal tool.** Single-user, runs locally. No login, no multi-tenancy, no third-party analytics.
+5. **Fail gracefully.** A video with no captions, bad captions or a blocked embed must give a clear message, never a blank screen.
+
+### 1.2 Out of scope (v1)
+- User accounts, cross-device sync, a database backend.
+- Speech recognition (speaking instead of typing).
+- Translation to Portuguese, a built-in dictionary, flashcards/SRS.
+- Languages other than English.
+- Sources other than YouTube (Vimeo, local files, streaming services).
+- Native mobile (a responsive layout is desirable, but typing long text on a phone is not the use case).
+
+---
+
+## 2. Decisions already made
+
+| Topic | Decision | Consequence |
 |---|---|---|
-| Stack | **Next.js (App Router) + TypeScript** | Tem servidor: a busca da legenda acontece em route handler, sem CORS. Deploy futuro trivial. |
-| Legendas | **Legendas do próprio YouTube** | Grátis, já vêm com timestamps. Limitação: vídeo sem legenda em inglês não é suportado no v1. |
-| Correção | **Tolerante, configurável** | Normaliza caixa/pontuação por padrão; modo estrito é opção. Diff palavra a palavra. |
-| Persistência | **Só no browser (IndexedDB)** | Zero infra. Export/import JSON como backup manual. |
-| Identidade visual | **Própria** | Do `DESIGN.md` aproveita-se só a *estrutura* (escala de espaçamento, hierarquia tipográfica, raios, padrões de componente); paleta, nome e fontes são próprios. |
-| Contrações e reduções | **Aceitar todas as formas equivalentes** | `don't` = `do not`, e também `gonna` = `going to`, `wanna` = `want to`. Exige tabela de equivalência bidirecional e alinhamento multi-token (§5.1). |
-| Corte do MVP | **Fase 1: loop puro, sem persistência** | Fechar a aba perde o progresso. Persistência entra na Fase 2. |
-| Tamanho do segmento | **3–8s, até ~15 palavras** | Valor fixo no MVP; vira configuração na Fase 2. |
-| Números | **Dígito = extenso** | Tabela limitada (0–100, redondos, anos, ordinais comuns). Ver §5.2. |
-| Fallback de legenda | **SRT/VTT manual já no v1** | Entra na Fase 1: parser + textarea. Nunca ficar travado se a rota automática cair. |
-| Atalho de repetir | **`Ctrl/Cmd + Enter`** | Sem conflito com o browser, sem quebrar navegação por teclado. |
-| Execução | **Só `localhost`** | Sem deploy. Evita IP de datacenter na busca de legenda e mantém o uso claramente pessoal. |
+| Stack | **Next.js (App Router) + TypeScript** | It has a server: caption lookup happens in a route handler, with no CORS. A future deploy is trivial. |
+| Captions | **YouTube's own captions** | Free, and they already come with timestamps. Limitation: a video with no English captions is unsupported in v1. |
+| Correction | **Lenient, configurable** | Normalises case/punctuation by default; strict mode is an option. Word-by-word diff. |
+| Persistence | **Browser only (IndexedDB)** | Zero infrastructure. JSON export/import as a manual backup. |
+| Visual identity | **Our own** | From `DESIGN.md` only the *structure* is reused (spacing scale, type hierarchy, radii, component patterns); the palette and fonts are our own. The name is **Eartype**. |
+| Contractions and reductions | **Accept every equivalent form** | `don't` = `do not`, and also `gonna` = `going to`, `wanna` = `want to`. Requires a bidirectional equivalence table and multi-token alignment (§5.1). |
+| MVP cut | **Phase 1: the bare loop, no persistence** | Closing the tab loses your progress. Persistence arrives in Phase 2. |
+| Segment size | **3–8s, up to ~15 words** | A fixed value in the MVP; becomes a setting in Phase 2. |
+| Numbers | **Digit = spelled out** | A limited table (0–100, round numbers, years, common ordinals). See §5.2. |
+| Caption fallback | **Manual SRT/VTT already in v1** | Lands in Phase 1: parser + textarea. Never get stuck if the automatic route goes down. |
+| Replay shortcut | **`Ctrl/Cmd + Enter`** | No conflict with the browser, no breakage of keyboard navigation. |
+| Execution | **`localhost` only** | No deploy. Avoids a datacenter IP on caption lookup and keeps the use clearly personal. |
 
 ---
 
-## 3. Persona e caso de uso
+## 3. Persona and use case
 
-**Único usuário:** estudante de inglês intermediário (B1–B2) que entende texto escrito bem melhor do que áudio. Senta 15–30 min por dia com um vídeo de interesse próprio (podcast, talk, review de tech) e faz ditado de um trecho.
+**Sole user:** an intermediate (B1–B2) English learner who understands written text far better than audio. Sits down 15–30 min a day with a video they actually care about (a podcast, a talk, a tech review) and takes dictation from a stretch of it.
 
-**Sessão típica:**
-1. Cola a URL de um vídeo de ~10 min.
-2. App confirma que existe legenda em inglês e quantos segmentos serão gerados.
-3. Escolhe começar do início (ou pular para 03:20, onde parou ontem).
-4. Pratica 20 segmentos, erra bastante em contrações e números.
-5. Vê o resumo: 78% de acurácia, 12 palavras problemáticas listadas.
-6. Fecha. No dia seguinte reabre o mesmo vídeo e o app oferece continuar de onde parou.
+**A typical session:**
+1. Pastes the URL of a ~10 min video.
+2. The app confirms English captions exist and how many segments will be generated.
+3. Chooses to start from the beginning (or to jump to 03:20, where they stopped yesterday).
+4. Practises 20 segments, missing a lot of contractions and numbers.
+5. Sees the summary: 78% accuracy, 12 troublesome words listed.
+6. Closes it. The next day they reopen the same video and the app offers to continue where they left off.
 
 ---
 
-## 4. Requisitos funcionais
+## 4. Functional requirements
 
-### RF-01 — Entrada de vídeo
-- Campo único que aceita: URL completa (`youtube.com/watch?v=ID`), `youtu.be/ID`, URL com `&t=`, URL de embed, ou o ID puro (11 caracteres).
-- Extrai o `videoId`; se inválido, erro inline imediato ("Não consegui identificar um vídeo do YouTube nessa URL").
-- Se a URL tiver `t=`/`start=`, o app oferece iniciar a partir daquele ponto.
-- Histórico dos últimos vídeos praticados fica listado na home, clicável.
+### RF-01 — Video entry
+- A single field accepting: a full URL (`youtube.com/watch?v=ID`), `youtu.be/ID`, a URL with `&t=`, an embed URL, or the bare ID (11 characters).
+- Extracts the `videoId`; if invalid, an immediate inline error ("Não consegui identificar um vídeo do YouTube nessa URL").
+- If the URL carries `t=`/`start=`, the app offers to start from that point.
+- A history of recently practised videos is listed on the home screen, clickable.
 
-### RF-02 — Obtenção da legenda
-- Ao submeter, o servidor busca a lista de faixas de legenda do vídeo e escolhe, nesta ordem:
-  1. Legenda **manual** em inglês (`en`, `en-US`, `en-GB`);
-  2. Legenda **auto-gerada** (ASR) em inglês;
-  3. Falha com mensagem específica.
-- O app deixa explícito qual foi usada, porque muda a experiência:
-  - **Manual:** tem pontuação e capitalização; o modo estrito faz sentido.
-  - **Auto-gerada:** normalmente sem pontuação, sem capitalização, com erros de ASR e cues sobrepostos/duplicados. O modo tolerante é obrigatório aqui.
-- Se houver mais de uma faixa em inglês, o usuário pode escolher qual usar.
-- A legenda obtida é **cacheada** (ver §7.3) para não refazer a requisição a cada visita.
-- Caso o vídeo só tenha legenda em outro idioma, o app avisa e não permite praticar (fora de escopo).
+### RF-02 — Getting the captions
+- On submit, the server fetches the video's caption track list and picks, in this order:
+  1. **Manual** English captions (`en`, `en-US`, `en-GB`);
+  2. **Auto-generated** (ASR) English captions;
+  3. Failure, with a specific message.
+- The app makes clear which one was used, because it changes the experience:
+  - **Manual:** has punctuation and capitalisation; strict mode makes sense.
+  - **Auto-generated:** usually no punctuation, no capitalisation, ASR errors and overlapping/duplicated cues. Lenient mode is mandatory here.
+- If there is more than one English track, the user can choose which to use.
+- The captions obtained are **cached** (see §7.3) so the request is not repeated on every visit.
+- If the video only has captions in another language, the app says so and does not allow practice (out of scope).
 
-### RF-02b — Legenda manual (SRT/VTT) — caminho de primeira classe, já no v1
-Não é só tela de erro: é uma opção **sempre visível** na entrada, ao lado do campo de URL. Depois do spike isso deixou de ser luxo — é a única rota que não depende de um endpoint não documentado continuar funcionando.
+### RF-02b — Manual captions (SRT/VTT) — a first-class path, already in v1
+It is not just an error screen: it is an option that is **always visible** on entry, next to the URL field. After the spike this stopped being a luxury — it is the only route that does not depend on an undocumented endpoint continuing to work.
 
-Sempre que a busca automática falhar (vídeo sem legenda, yt-dlp desatualizado, rate limit), o erro vem acompanhado desse caminho de saída: **colar a legenda à mão**.
-- Textarea que aceita **SRT** e **WebVTT** (os dois formatos que se encontra na prática), detectando o formato automaticamente.
-- O parser valida e mostra um preview: nº de cues, duração coberta, primeira e última linha — para você confirmar que colou a legenda certa antes de começar.
-- Timestamps em `HH:MM:SS,mmm` (SRT) e `HH:MM:SS.mmm` (VTT); ignora índices, `WEBVTT`, `NOTE`, `STYLE` e tags inline (`<i>`, `<c>`, `<00:00:01.000>`).
-- A legenda colada segue exatamente o mesmo caminho da automática a partir daí (segmentação, correção), e é tratada como **manual** para efeito de modo estrito.
-- Também acessível de propósito, não só em caso de erro: um link "colar legenda" sempre disponível na tela de entrada.
+Whenever the automatic lookup fails (no captions, an outdated yt-dlp, a rate limit), the error comes with that way out: **paste the captions by hand**.
+- A textarea accepting **SRT** and **WebVTT** (the two formats you meet in practice), detecting the format automatically.
+- The parser validates and shows a preview: cue count, duration covered, first and last line — so you can confirm you pasted the right captions before starting.
+- Timestamps in `HH:MM:SS,mmm` (SRT) and `HH:MM:SS.mmm` (VTT); indices, `WEBVTT`, `NOTE`, `STYLE` and inline tags (`<i>`, `<c>`, `<00:00:01.000>`) are ignored.
+- From there, pasted captions follow exactly the same path as automatic ones (segmentation, correction), and are treated as **manual** for the purposes of strict mode.
+- Also reachable on purpose, not only on error: a "paste captions" link always available on the entry screen.
 
-### RF-03 — Segmentação
-A legenda crua vem em *cues* de tamanho irregular (às vezes 1s, às vezes uma palavra solta). Ela precisa ser reagrupada em **segmentos praticáveis**.
+### RF-03 — Segmentation
+Raw captions arrive as *cues* of irregular size (sometimes 1s, sometimes a lone word). They have to be regrouped into **practisable segments**.
 
-Regras do segmentador:
-- Alvo: **3–8 segundos** de áudio por segmento, **máximo ~15 palavras**.
-- Quebra preferencial em pontuação final (`.`, `?`, `!`), depois em `,`/`;`, depois em pausa de silêncio ≥ 0,7s entre cues.
-- Nunca quebra no meio de um cue.
-- Junta cues consecutivos enquanto o segmento estiver abaixo do alvo mínimo.
-- Remove cues não-falados: `[Music]`, `[Applause]`, `[Laughter]`, `>>`, marcações de speaker do tipo `NAME:` (configurável — ver §10).
-- Deduplica o *rolling text* da legenda auto-gerada (o YouTube repete a linha anterior no cue seguinte).
-- O usuário pode ajustar o tamanho alvo do segmento (curto / médio / longo) nas configurações; regenerar segmentos não perde o progresso já feito, porque o progresso é ancorado em timestamp.
+Segmenter rules:
+- Target: **3–8 seconds** of audio per segment, **at most ~15 words**.
+- Prefer breaking on sentence-final punctuation (`.`, `?`, `!`), then on `,`/`;`, then on a silent gap of ≥ 0.7s between cues.
+- Never break in the middle of a cue.
+- Join consecutive cues while the segment is below the minimum target.
+- Remove non-spoken cues: `[Music]`, `[Applause]`, `[Laughter]`, `>>`, speaker tags of the `NAME:` kind (configurable — see §10).
+- Deduplicate the *rolling text* of auto-generated captions (YouTube repeats the previous line in the next cue).
+- The user can adjust the target segment size (short / medium / long) in settings; regenerating segments does not lose progress already made, because progress is anchored to a timestamp.
 
-Cada segmento final tem: `{ index, startMs, endMs, referenceText, sourceCueIds }`.
+Each final segment has: `{ index, startMs, endMs, referenceText, sourceCueIds }`.
 
-### RF-04 — Reprodução e pausa automática
-- Player embutido via **YouTube IFrame Player API**.
-- Ao iniciar um segmento: `seekTo(startMs)` + `playVideo()`.
-- A API **não** dispara evento "chegou no tempo X", então o app faz **polling de `getCurrentTime()` a cada 100ms** e chama `pauseVideo()` ao cruzar `endMs`.
-- **Medido no spike S-2:** o vídeo para ~**64ms depois** do alvo, com desvio de apenas ±8ms; polling de 50ms não melhora. **Lead fica em 0** — pausar cedo cortaria a última sílaba, e pausar 64ms tarde cai no silêncio entre frases.
-- **Requisito descoberto no S-2:** esperar o `seekTo` assentar (~600ms) antes de começar a contar. Sem isso, o polling lê o tempo antigo e o segmento nunca pausa.
-- Após pausar, o foco vai automaticamente para o campo de digitação.
-- O vídeo **não avança** enquanto o segmento não for respondido (ou explicitamente pulado).
-- Controles disponíveis durante o ditado:
-  - **Repetir segmento** (quantas vezes quiser; contabilizado nas stats).
-  - **Velocidade** 1x / 0.75x / 0.5x (via `setPlaybackRate`).
-  - **Repetir só os últimos 2 segundos** do segmento.
-  - **Pular segmento** (marca como pulado, revela a resposta).
-- As legendas nativas do YouTube (CC) ficam **desligadas** no player (`cc_load_policy: 0`) — ver a legenda derrota o exercício. Também é preciso reduzir a UI do player o suficiente para que o CC não seja ativado sem querer (ver §9, risco R-04).
+### RF-04 — Playback and automatic pause
+- Player embedded through the **YouTube IFrame Player API**.
+- When starting a segment: `seekTo(startMs)` + `playVideo()`.
+- The API does **not** fire a "reached time X" event, so the app **polls `getCurrentTime()` every 100ms** and calls `pauseVideo()` on crossing `endMs`.
+- **Measured in spike S-2:** the video stops ~**64ms after** the target, with only ±8ms of spread; 50ms polling does not improve it. **Lead stays at 0** — pausing early would clip the last syllable, and pausing 64ms late lands in the silence between sentences.
+- **Requirement discovered in S-2:** wait for the `seekTo` to settle (~600ms) before starting to count. Without that, the polling reads the old time and the segment never pauses.
+- After pausing, focus moves automatically to the typing field.
+- The video **does not advance** until the segment is answered (or explicitly skipped).
+- Controls available during dictation:
+  - **Replay segment** (as many times as you like; counted in the stats).
+  - **Speed** 1x / 0.75x / 0.5x (via `setPlaybackRate`).
+  - **Replay just the last 2 seconds** of the segment.
+  - **Skip segment** (marks it skipped, reveals the answer).
+- YouTube's native captions (CC) are **off** in the player (`cc_load_policy: 0`) — seeing the caption defeats the exercise. The player UI must also be reduced enough that CC cannot be turned on by accident (see §9, risk R-04).
 
-### RF-05 — Digitação e verificação
-- Textarea de uma/duas linhas, autofoco, com `spellcheck`, `autocorrect` e `autocapitalize` **desligados** — o browser não pode corrigir por você.
-- **Enter** verifica. **Shift+Enter** quebra linha.
-- Comparação (pipeline):
-  1. Normaliza os dois lados conforme o modo (ver §5).
-  2. Tokeniza em palavras.
-  3. Alinha com diff palavra a palavra (LCS + Levenshtein por token).
-  4. Classifica cada token: **acerto**, **erro de digitação**, **palavra errada**, **faltando**, **sobrando**.
-- Resultado mostra a frase de referência com marcação colorida e a sua tentativa alinhada.
-- Acurácia do segmento = tokens corretos / tokens da referência.
-- Se acertou tudo: mostra **"✓ acertou"** com a frase em verde e avança sozinho após ~1,2s. (Era 700ms; no uso real o acerto sumia da tela antes de ser percebido — e ver que acertou é metade do que traz alguém de volta ao exercício.)
-- Se errou: mostra o diff e espera ação — **tentar de novo** (limpa o campo, replay automático do áudio) ou **aceitar e seguir**.
-- Limite configurável de tentativas antes de revelar a resposta (padrão: 3; 0 = ilimitado).
+### RF-05 — Typing and checking
+- A one/two-line textarea, autofocused, with `spellcheck`, `autocorrect` and `autocapitalize` **off** — the browser must not correct on your behalf.
+- **Enter** checks. **Shift+Enter** breaks the line.
+- Comparison (pipeline):
+  1. Normalise both sides according to the mode (see §5).
+  2. Tokenise into words.
+  3. Align with a word-by-word diff (LCS + per-token Levenshtein).
+  4. Classify each token: **correct**, **typo**, **wrong word**, **missing**, **extra**.
+- The result shows the reference sentence with coloured markup and your attempt aligned to it.
+- Segment accuracy = correct tokens / reference tokens.
+- On a perfect answer: show **"✓ acertou"** with the sentence in green and advance on its own after ~1.2s. (It was 700ms; in real use the hit left the screen before it registered — and seeing that you got it right is half of what brings someone back to the exercise.)
+- On a miss: show the diff and wait for an action — **try again** (clears the field, automatic audio replay) or **accept and move on**.
+- A configurable attempt limit before the answer is revealed (default: 3; 0 = unlimited).
 
-### RF-06 — Ajudas (hints)
-Disponíveis antes de verificar, cada uma registrada nas stats:
-- **Revelar nº de palavras** (mostra `_ _ _ _` com o comprimento de cada palavra).
-- **Revelar primeira letra** de cada palavra.
-- **Revelar próxima palavra** (a primeira ainda não digitada).
-- **Revelar tudo** (equivale a pular).
+### RF-06 — Hints
+Available before checking, each one recorded in the stats:
+- **Reveal the word count** (shows `_ _ _ _` with each word's length).
+- **Reveal the first letter** of each word.
+- **Reveal the next word** (the first one not yet typed).
+- **Reveal everything** (equivalent to skipping).
 
-### RF-07 — Progresso e navegação
-- Barra de progresso por segmento (X de N) e por tempo de vídeo.
-- Navegar para o segmento anterior/próximo manualmente.
-- Retomar automaticamente do último segmento não concluído ao reabrir o vídeo.
-- Modo revisão: percorrer só os segmentos errados/pulados de uma sessão anterior.
+### RF-07 — Progress and navigation
+- A progress bar by segment (X of N) and by video time.
+- Navigate to the previous/next segment manually.
+- Automatically resume from the last unfinished segment when reopening the video.
+- Review mode: walk only through the missed/skipped segments of a previous session.
 
-### RF-08 — Resumo da sessão
-Ao terminar (ou ao encerrar manualmente):
-- Acurácia geral, nº de segmentos, tempo gasto, nº de replays, nº de hints.
-- Lista das **palavras mais problemáticas** (agregadas em lowercase, ordenadas por frequência de erro) — essa lista é o principal valor de aprendizado.
-- Botão para copiar/exportar o resumo em Markdown.
+### RF-08 — Session summary
+On finishing (or on ending manually):
+- Overall accuracy, segment count, time spent, replay count, hint count.
+- A list of the **most troublesome words** (aggregated in lowercase, ordered by error frequency) — that list is the main learning value.
+- A button to copy/export the summary as Markdown.
 
-### RF-09 — Configurações
-Persistidas localmente: modo de correção (tolerante/estrito), tamanho de segmento, velocidade padrão, replay automático ao errar, limite de tentativas, filtro de cues não-falados, tema (claro/escuro).
+### RF-09 — Settings
+Persisted locally: correction mode (lenient/strict), segment size, default speed, automatic replay on a miss, attempt limit, non-spoken cue filter, theme (light/dark).
 
-### RF-10 — Atalhos de teclado
-| Atalho | Ação |
+### RF-10 — Keyboard shortcuts
+| Shortcut | Action |
 |---|---|
-| `Enter` | Verificar |
-| `Shift+Enter` | Nova linha |
-| `Ctrl/Cmd + Enter` | Repetir o segmento |
-| `Ctrl/Cmd + Shift + Enter` | Repetir só os últimos 2s |
-| `Ctrl/Cmd + ↓` / `↑` | Diminuir / aumentar velocidade |
-| `Ctrl/Cmd + H` | Próxima ajuda |
-| `Ctrl/Cmd + →` | Pular segmento |
-| `Esc` | Pausar sessão |
+| `Enter` | Check |
+| `Shift+Enter` | New line |
+| `Ctrl/Cmd + Enter` | Replay the segment |
+| `Ctrl/Cmd + Shift + Enter` | Replay just the last 2s |
+| `Ctrl/Cmd + ↓` / `↑` | Decrease / increase speed |
+| `Ctrl/Cmd + H` | Next hint |
+| `Ctrl/Cmd + →` | Skip segment |
+| `Esc` | Pause the session |
 
-Nenhum desses atalhos conflita com comandos do browser. `Ctrl+R` (reload) foi **deliberadamente evitado**: se o `preventDefault` falhasse, a página recarregaria e — no MVP, que não tem persistência — a sessão inteira seria perdida.
+None of these shortcuts conflicts with a browser command. `Ctrl+R` (reload) was **deliberately avoided**: if the `preventDefault` ever failed, the page would reload and — in the MVP, which has no persistence — the whole session would be lost.
 
-### RF-11 — Painel de transcrição
-Coluna à direita da prática, listando todos os trechos com o timestamp de início e o atual destacado.
+### RF-11 — Transcript panel
+A column to the right of the practice area, listing every segment with its start timestamp and the current one highlighted.
 
-- **Todo trecho nasce borrado** (`blur`). Ler a legenda derrota o exercício (§9, R-04), e o painel é literalmente a folha de respostas.
-- **Um trecho sai do blur quando é respondido** — acertado, aceito com erro ou revelado. Nos dois últimos a resposta já foi mostrada de qualquer forma; no primeiro, o desborrar é a recompensa, e o painel preenchido vira o registro visível do progresso.
-- **Botão "mostrar tudo"** desliga o blur de uma vez, inclusive do que ainda não foi praticado. É deliberado: ler acompanhando é um jeito legítimo de atacar um vídeo difícil. O padrão é desligado.
-- Clicar num trecho pula para ele. As linhas ficam fora da ordem de tabulação — com centenas de trechos, tabular por elas atrapalharia mais que ajudaria.
-- O blur é disciplina, não cadeado: quem abrir o inspetor lê. Não é o que ele existe para impedir.
+- **Every segment is born blurred** (`blur`). Reading the caption defeats the exercise (§9, R-04), and the panel is literally the answer sheet.
+- **A segment leaves the blur when it is answered** — got right, accepted with errors, or revealed. In the latter two the answer has already been shown anyway; in the first, un-blurring is the reward, and the filled-in panel becomes the visible record of progress.
+- **A "show all" button** lifts the blur at once, including on what has not been practised yet. This is deliberate: reading along is a legitimate way to attack a hard video. The default is off.
+- Clicking a segment jumps to it. The lines stay out of the tab order — with hundreds of segments, tabbing through them would get in the way more than it helps.
+- The blur is discipline, not a lock: anyone who opens the inspector can read it. That is not what it exists to prevent.
 
 ---
 
-## 5. Regras de normalização (correção tolerante)
+## 5. Normalization rules (lenient correction)
 
-**Modo tolerante (padrão)** — ignora:
-- Caixa (`The` = `the`).
-- Pontuação e símbolos nas bordas das palavras (`don't,` = `dont` = `don't`).
-- Apóstrofos retos vs. curvos.
-- Espaços múltiplos e espaços não separáveis.
-- Diferenças ortográficas US/UK de uma lista curta (`color`/`colour`, `realize`/`realise`, `traveling`/`travelling`).
-- **Números** por extenso vs. dígito — ver §5.2.
-- **Contrações e reduções faladas** — ver §5.1, o ponto mais sensível da correção.
-- Filler words da legenda ASR (`uh`, `um`, `mm`, `hmm`) — omitir não conta erro; digitar também não.
+**Lenient mode (default)** — ignores:
+- Case (`The` = `the`).
+- Punctuation and symbols at word edges (`don't,` = `dont` = `don't`).
+- Straight vs. curly apostrophes.
+- Multiple spaces and non-breaking spaces.
+- US/UK spelling differences from a short list (`color`/`colour`, `realize`/`realise`, `traveling`/`travelling`).
+- **Numbers** spelled out vs. as digits — see §5.2.
+- **Spoken contractions and reductions** — see §5.1, the most delicate part of the correction.
+- Filler words from ASR captions (`uh`, `um`, `mm`, `hmm`) — omitting them is not an error, and neither is typing them.
 
-**Erro de digitação (typo):** token com distância de Levenshtein ≤ 1 (palavras até 5 letras) ou ≤ 2 (palavras maiores) é marcado em **amarelo** e conta como acerto parcial (0,5) — a ideia é separar "não entendi a palavra" de "escorreguei no teclado".
+**Typo:** a token within a Levenshtein distance of ≤ 1 (words up to 5 letters) or ≤ 2 (longer words) is marked **amber** and counts as a partial hit (0.5) — the idea is to separate "I did not understand the word" from "my fingers slipped".
 
-### 5.1 Contrações e reduções faladas
+### 5.1 Spoken contractions and reductions
 
-**Problema real:** a legenda do YouTube frequentemente escreve a forma *ortográfica* mesmo quando o falante usou a forma *reduzida*. A pessoa diz "gonna", a legenda escreve "going to". Quem transcreve pelo ouvido escreve "gonna" — e seria marcado como erro, quando na verdade ouviu **melhor** do que a legenda registrou. O mesmo vale ao contrário (legenda ASR escreve "wanna", você escreve "want to").
+**The real problem:** YouTube captions frequently write the *orthographic* form even when the speaker used the *reduced* one. The person says "gonna", the caption writes "going to". Someone transcribing by ear writes "gonna" — and would be marked wrong, when in fact they heard **better** than the caption recorded. The same holds in reverse (an ASR caption writes "wanna", you write "want to").
 
-**Regra:** as formas equivalentes são aceitas **nos dois sentidos**, em ambas as direções da comparação.
+**Rule:** equivalent forms are accepted **both ways**, in both directions of the comparison.
 
-Categorias cobertas pela tabela de equivalência:
+Categories covered by the equivalence table:
 
-| Categoria | Exemplos |
+| Category | Examples |
 |---|---|
-| Contrações padrão | `don't`/`do not`, `I'm`/`I am`, `they're`/`they are`, `won't`/`will not`, `can't`/`cannot`/`can not` |
-| Reduções coloquiais | `gonna`/`going to`, `wanna`/`want to`, `gotta`/`got to`, `hafta`/`have to`, `tryna`/`trying to` |
-| Reduções de `of` | `kinda`/`kind of`, `sorta`/`sort of`, `outta`/`out of`, `lotta`/`lot of`, `cuppa`/`cup of` |
+| Standard contractions | `don't`/`do not`, `I'm`/`I am`, `they're`/`they are`, `won't`/`will not`, `can't`/`cannot`/`can not` |
+| Colloquial reductions | `gonna`/`going to`, `wanna`/`want to`, `gotta`/`got to`, `hafta`/`have to`, `tryna`/`trying to` |
+| `of` reductions | `kinda`/`kind of`, `sorta`/`sort of`, `outta`/`out of`, `lotta`/`lot of`, `cuppa`/`cup of` |
 | Modal + have | `shoulda`/`should have`/`should've`, `woulda`, `coulda`, `musta` |
-| Pronome reduzido | `lemme`/`let me`, `gimme`/`give me`, `'em`/`them`, `y'all`/`you all`, `dunno`/`don't know` |
-| Outras | `'cause`/`because`/`cuz`, `ya`/`you`, `ain't` (ver ambiguidade abaixo) |
+| Reduced pronouns | `lemme`/`let me`, `gimme`/`give me`, `'em`/`them`, `y'all`/`you all`, `dunno`/`don't know` |
+| Others | `'cause`/`because`/`cuz`, `ya`/`you`, `ain't` (see the ambiguity below) |
 
-**Implicação técnica — alinhamento multi-token.** `gonna` é 1 token e `going to` são 2. Um diff palavra a palavra ingênuo desalinha a frase inteira a partir daí e pinta tudo de vermelho. Duas consequências para a implementação:
+**Technical implication — multi-token alignment.** `gonna` is 1 token and `going to` is 2. A naive word-by-word diff misaligns the whole sentence from there on and paints everything red. Two consequences for the implementation:
 
-1. A normalização roda em **duas passadas**: primeiro um *pre-pass de frase* que canoniza as expressões multi-palavra (a forma expandida vira a canônica: `gonna` → `going to`), depois a tokenização. Assim os dois lados chegam ao diff com a mesma contagem de tokens.
-2. O matcher compara **conjuntos de variantes aceitas** por posição, não strings: dois tokens casam se os conjuntos se cruzam. Isso resolve os casos ambíguos, em que expandir seria *escolher errado*:
-   - `he's` = `he is` **ou** `he has`
-   - `I'd` = `I would` **ou** `I had`
+1. Normalization runs in **two passes**: first a *sentence pre-pass* that canonicalises multi-word expressions (the expanded form becomes canonical: `gonna` → `going to`), then tokenisation. That way both sides reach the diff with the same token count.
+2. The matcher compares **sets of accepted variants** per position, not strings: two tokens match if their sets intersect. That settles the ambiguous cases, where expanding would mean *choosing wrong*:
+   - `he's` = `he is` **or** `he has`
+   - `I'd` = `I would` **or** `I had`
    - `ain't` = `am not` / `is not` / `are not` / `has not`
-   - `'s` possessivo (`John's car`) **não** é contração e nunca deve ser expandido.
+   - the possessive `'s` (`John's car`) is **not** a contraction and must never be expanded.
 
-**Testes obrigatórios** (§7.5) para esse módulo: `"I'm gonna go"` vs `"I am going to go"` vs `"Im gonna go"` — as três precisam dar 100%; e `"the dog's bone"` vs `"the dog is bone"` precisa dar **erro**, para provar que o possessivo não foi expandido.
+**Mandatory tests** (§7.5) for this module: `"I'm gonna go"` vs `"I am going to go"` vs `"Im gonna go"` — all three must score 100%; and `"the dog's bone"` vs `"the dog is bone"` must be an **error**, to prove the possessive was not expanded.
 
-**Limite conhecido:** a tabela é finita e não cobre sotaques/reduções raras (`whatcha`, `betcha`, `innit`). Começa com ~40 entradas e cresce conforme o uso — quando um erro injusto aparecer, a correção é adicionar uma linha na tabela e um teste.
+**Known limit:** the table is finite and does not cover accents or rare reductions (`whatcha`, `betcha`, `innit`). It starts at ~40 entries and grows with use — when an unfair error shows up, the fix is to add a row to the table and a test.
 
-### 5.2 Números
+### 5.2 Numbers
 
-Dígito e forma por extenso são **equivalentes nos dois sentidos**, com uma tabela deliberadamente limitada (não é uma biblioteca de conversão completa):
+Digits and spelled-out forms are **equivalent both ways**, with a deliberately limited table (this is not a complete conversion library):
 
-| Cobre | Exemplos |
+| Covers | Examples |
 |---|---|
-| Cardinais 0–100 | `5` = `five`, `21` = `twenty-one` = `twenty one` |
-| Redondos | `200`, `1000`, `1500` = `fifteen hundred` = `one thousand five hundred` |
-| Anos | `1990` = `nineteen ninety`, `2024` = `twenty twenty-four` = `two thousand twenty-four` |
-| Ordinais comuns | `1st` = `first`, `3rd` = `third` |
-| Porcentagem | `10%` = `ten percent` |
+| Cardinals 0–100 | `5` = `five`, `21` = `twenty-one` = `twenty one` |
+| Round numbers | `200`, `1000`, `1500` = `fifteen hundred` = `one thousand five hundred` |
+| Years | `1990` = `nineteen ninety`, `2024` = `twenty twenty-four` = `two thousand twenty-four` |
+| Common ordinals | `1st` = `first`, `3rd` = `third` |
+| Percentages | `10%` = `ten percent` |
 
-Não cobre (compara literalmente): decimais, moeda, números grandes arbitrários, telefones, horários. Como no §5.1, a canonização acontece no pre-pass de frase — `twenty one` são 2 tokens e `21` é 1.
+Not covered (compared literally): decimals, currency, arbitrary large numbers, phone numbers, times of day. As in §5.1, canonicalisation happens in the sentence pre-pass — `twenty one` is 2 tokens and `21` is 1.
 
-**Siglas:** comparadas ignorando pontos e caixa (`NASA` = `nasa` = `N.A.S.A.`). Soletrar uma sigla por extenso não é aceito.
+**Acronyms:** compared ignoring dots and case (`NASA` = `nasa` = `N.A.S.A.`). Spelling an acronym out in full is not accepted.
 
-**Modo estrito:** só normaliza espaços em branco; todo o resto precisa bater. Fica desabilitado automaticamente quando a legenda é auto-gerada (não faz sentido exigir pontuação de um texto que não tem pontuação).
+**Strict mode:** normalises whitespace only; everything else has to match. It is disabled automatically when the captions are auto-generated (there is no sense in demanding punctuation from a text that has none).
 
 ---
 
-## 6. Fluxo / máquina de estados
+## 6. Flow / state machine
 
 ```
 idle
-  └─(submete URL)→ resolving        # extrai videoId, busca faixas de legenda
-        ├─(falha)→ error            # sem legenda / vídeo indisponível / embed bloqueado
-        └─(ok)→ ready               # segmentos gerados, player carregado
-              └─(start)→ playing    # tocando o segmento atual
-                    └─(atinge endMs)→ awaiting_input   # pausado, foco no textarea
+  └─(submit URL)→ resolving        # extract videoId, fetch caption tracks
+        ├─(failure)→ error         # no captions / video unavailable / embed blocked
+        └─(ok)→ ready              # segments generated, player loaded
+              └─(start)→ playing   # playing the current segment
+                    └─(reaches endMs)→ awaiting_input   # paused, focus in the textarea
                           ├─(Enter)→ checking → feedback
-                          │      ├─(correto)→ next
-                          │      └─(errado)→ awaiting_input (retry) | next (aceitar)
+                          │      ├─(correct)→ next
+                          │      └─(wrong)→ awaiting_input (retry) | next (accept)
                           ├─(replay)→ playing
                           └─(skip)→ next
-                                └─ next: há mais segmentos? playing : session_summary
+                                └─ next: any segments left? playing : session_summary
 ```
 
-Estados extras: `paused` (Esc), `seeking` (usuário navegou manualmente).
+Extra states: `paused` (Esc), `seeking` (the user navigated manually).
 
 ---
 
-## 7. Arquitetura técnica
+## 7. Technical architecture
 
 ### 7.1 Stack
 - **Next.js (App Router) + TypeScript (strict)**
-- **Tailwind CSS**, com tokens derivados do `DESIGN.md` (ver §8)
-- **Zustand** (ou `useReducer` + Context) para a máquina de estados da sessão
-- **Dexie** sobre IndexedDB para persistência
-- **Zod** para validar payloads das route handlers
-- **Vitest** para unit tests (segmentador, normalizador, diff) + **Playwright** para 1–2 fluxos E2E
-- Sem biblioteca de componentes pesada; componentes próprios
+- **Tailwind CSS**, with tokens derived from `DESIGN.md` (see §8)
+- **Zustand** (or `useReducer` + Context) for the session state machine
+- **Dexie** over IndexedDB for persistence
+- **Zod** to validate route handler payloads
+- **Vitest** for unit tests (segmenter, normalizer, diff) + **Playwright** for 1–2 E2E flows
+- No heavyweight component library; our own components
 
-### 7.2 Estrutura de pastas (proposta)
+### 7.2 Folder structure (proposed)
 ```
 app/
-  page.tsx                     # home: input de URL + histórico
-  practice/[videoId]/page.tsx  # sessão de ditado
-  api/transcript/route.ts      # GET ?videoId= → faixas + cues
-  api/video/route.ts           # GET ?videoId= → metadados (título, duração, thumb)
+  page.tsx                     # home: URL input + history
+  practice/[videoId]/page.tsx  # dictation session
+  api/transcript/route.ts      # GET ?videoId= → tracks + cues
+  api/video/route.ts           # GET ?videoId= → metadata (title, duration, thumb)
 components/
-  YouTubePlayer.tsx            # wrapper da IFrame API
+  YouTubePlayer.tsx            # IFrame API wrapper
   DictationInput.tsx
   DiffResult.tsx
   SegmentProgress.tsx
   SessionSummary.tsx
 lib/
   youtube/parse-url.ts
-  youtube/transcript.ts        # fetch + parse das faixas (camada isolada, trocável)
-  captions/parse-srt.ts        # plano B: SRT/VTT colado à mão
-  segmenter.ts                 # cues → segmentos
-  normalize.ts                 # regras da §5
-  diff.ts                      # alinhamento palavra a palavra
+  youtube/transcript.ts        # fetch + parse of the tracks (isolated, swappable layer)
+  captions/parse-srt.ts        # plan B: hand-pasted SRT/VTT
+  segmenter.ts                 # cues → segments
+  normalize.ts                 # §5 rules
+  diff.ts                      # word-by-word alignment
   stats.ts
   db.ts                        # Dexie
 types/
 ```
 
-### 7.3 Obtenção da legenda (ponto crítico)
-Não existe API pública e oficial do YouTube que devolva o **texto** da legenda de um vídeo de terceiros — a Data API v3 (`captions.download`) só funciona para vídeos do próprio canal autenticado. Na prática as opções são:
+### 7.3 Getting the captions (the critical point)
+There is no public, official YouTube API that returns the **text** of a third party's video captions — the Data API v3 (`captions.download`) only works for videos on your own authenticated channel. In practice the options are:
 
-- **A.** Ler a página do vídeo no servidor, extrair `captionTracks` do `ytInitialPlayerResponse` e baixar a faixa pelo endpoint `timedtext`.
-- **B.** Usar uma lib que encapsula isso (`youtube-transcript`, `youtubei.js`).
+- **A.** Read the video page on the server, extract `captionTracks` from `ytInitialPlayerResponse` and download the track through the `timedtext` endpoint.
+- **B.** Use a library that wraps this (`youtube-transcript`, `youtubei.js`).
 
-- **C.** Delegar para o `yt-dlp` (binário Python), chamado pelo route handler.
+- **C.** Delegate to `yt-dlp` (a Python binary), called from the route handler.
 
-> ⚠️ **Atualizado pelo spike (2026-09-20, ver `SPIKE-RESULTS.md`): A e B estão bloqueadas hoje.** O `timedtext` devolve **200 com corpo vazio** em todos os seis clientes internos testados — bloqueio por *proof-of-origin token*. Só a opção **C (`yt-dlp`)** entregou legenda.
+> ⚠️ **Updated by the spike (2026-09-20, see `SPIKE-RESULTS.md`): A and B are blocked today.** `timedtext` returns **200 with an empty body** on all six internal clients tested — a *proof-of-origin token* block. Only option **C (`yt-dlp`)** delivered captions.
 
-**Decisão: C — `yt-dlp` chamado pelo route handler, com o caminho manual (RF-02b) como opção de primeira classe na UI, não apenas tela de erro.** O bloqueio é de *quem faz a requisição*, não do runtime: com o yt-dlp como processo filho, o Next.js obtém a legenda normalmente (validado em S-1b, ~2,3s por vídeo). Preço: dependência de binário externo, documentada no README, e um `yt-dlp -U` ocasional.
+**Decision: C — `yt-dlp` called from the route handler, with the manual path (RF-02b) as a first-class option in the UI, not merely an error screen.** The block is on *whoever makes the request*, not on the runtime: with yt-dlp as a child process, Next.js gets the captions normally (validated in S-1b, ~2.3s per video). The price: a dependency on an external binary, documented in the README, and an occasional `yt-dlp -U`.
 
-**Restrições que o spike impôs, valham para qualquer opção:**
-- Baixar **uma única faixa por vídeo** — pedir a segunda em sequência rápida tomou **HTTP 429**.
-- Cachear com força; tratar a legenda como cara de obter.
-- Ao diagnosticar com `youtubei.js`, usar sempre `retrieve_player: true` — com `false` o vídeo aparece como `UNPLAYABLE` e sem faixas, um falso negativo.
+**Constraints the spike imposed, whichever option is used:**
+- Download **exactly one track per video** — asking for the second in quick succession earned an **HTTP 429**.
+- Cache hard; treat captions as expensive to obtain.
+- When diagnosing with `youtubei.js`, always use `retrieve_player: true` — with `false` the video shows up as `UNPLAYABLE` and with no tracks, a false negative.
 
-**Riscos assumidos:** é um endpoint não documentado; o YouTube muda o formato periodicamente e aplica rate limit por IP. Uso pessoal, não comercial. O plano B — colar SRT/VTT à mão (RF-02b) — deixou de ser luxo e virou a única rota garantida.
+**Accepted risks:** it is an undocumented endpoint; YouTube changes the format periodically and applies per-IP rate limiting. Personal, non-commercial use. Plan B — pasting SRT/VTT by hand (RF-02b) — stopped being a luxury and became the only guaranteed route.
 
-**Cache:** resposta guardada em IndexedDB por `videoId` (com a data da busca) e, em desenvolvimento, opcionalmente em disco no servidor. Botão "recarregar legenda" força refetch.
+**Cache:** the response is kept in IndexedDB by `videoId` (with the lookup date) and, in development, optionally on disk on the server. A "reload captions" button forces a refetch.
 
-### 7.4 Modelo de dados (IndexedDB)
+### 7.4 Data model (IndexedDB)
 ```ts
 type Video = {
   videoId: string; title: string; durationSec: number; thumbnailUrl: string;
   captionKind: 'manual' | 'asr'; captionLang: string;
-  cues: Cue[];            // legenda crua, como veio
+  cues: Cue[];            // raw captions, as they came
   fetchedAt: number;
 };
 
@@ -346,7 +346,7 @@ type Attempt = {
   status: 'correct' | 'partial' | 'skipped';
   replays: number; hintsUsed: number;
   durationMs: number; createdAt: number;
-  wrongWords: string[];                    // alimenta o agregado de palavras difíceis
+  wrongWords: string[];                    // feeds the hard-words aggregate
 };
 
 type Session = {
@@ -359,108 +359,108 @@ type Session = {
 type Settings = { /* §RF-09 */ };
 ```
 
-### 7.5 Estratégia de testes
-- **Unit (o coração):** `normalize`, `diff` e `segmenter` com tabela de casos — contrações e reduções (§5.1), números (§5.2), typos, cues duplicados de ASR, `[Music]`, cue de 0,3s, cue de 30s.
-- **Parser SRT/VTT:** arquivo bem formado, arquivo com CRLF, timestamps nos dois separadores (`,` e `.`), tags inline, entrada inválida (precisa dar erro legível, não crashar).
-- **Fixtures:** 2–3 legendas reais salvas em JSON (uma manual, uma auto-gerada) para não depender da rede nos testes.
-- **E2E:** "cola URL → primeiro segmento pausa → digita certo → avança", com a rota de transcript mockada.
+### 7.5 Test strategy
+- **Unit (the heart):** `normalize`, `diff` and `segmenter` against a table of cases — contractions and reductions (§5.1), numbers (§5.2), typos, duplicated ASR cues, `[Music]`, a 0.3s cue, a 30s cue.
+- **SRT/VTT parser:** a well-formed file, a file with CRLF, timestamps in both separators (`,` and `.`), inline tags, invalid input (must give a readable error, not crash).
+- **Fixtures:** 2–3 real caption files saved as JSON (one manual, one auto-generated) so the tests do not depend on the network.
+- **E2E:** "paste URL → first segment pauses → type it right → advance", with the transcript route mocked.
 
 ---
 
 ## 8. UI / Design
 
-O repositório contém `DESIGN.md`, um design system extraído de um site de marca. **Decisão: identidade própria.** Dele aproveita-se apenas a *estrutura*, que é genérica e bem resolvida:
-- a escala de espaçamento (4/8/16/24/32/48/64/96);
-- a hierarquia tipográfica (tamanhos em incrementos fechados, body com line-height 1.5);
-- a escala de raios (input pequeno, card médio, botão pill);
-- os padrões de estado de componente (default / hover / pressed / disabled / focus).
+The repository contains `DESIGN.md`, a design system extracted from a brand's site. **Decision: our own identity.** Only its *structure* is reused, which is generic and well resolved:
+- the spacing scale (4/8/16/24/32/48/64/96);
+- the type hierarchy (sizes in closed increments, body at line-height 1.5);
+- the radius scale (small input, medium card, pill button);
+- the component state patterns (default / hover / pressed / disabled / focus).
 
-Paleta, fontes e nome são próprios — nada de cor de marca, logotipo ou nome de terceiro no app. Fontes: uma sans de sistema para UI e uma **monoespaçada** para o texto do ditado (o alinhamento do diff palavra a palavra fica muito mais legível em mono).
+The palette and fonts are our own — no brand colour, logo or third-party name in the app. Fonts: a system sans for UI and a **monospace** for the dictation text (the word-by-word diff alignment is far more readable in mono).
 
-Demais diretrizes:
-- Modo escuro como padrão (assistir vídeo com fundo claro cansa).
-- O player ocupa o topo/centro; o campo de digitação fica **imediatamente abaixo** do vídeo, sem precisar rolar a página em 1366×768.
-- Diff colorido: verde = certo, amarelo = typo, vermelho = errado, cinza tracejado = faltando, riscado = sobrando. Cor **nunca** é o único indicador (ícone/sublinhado também), por acessibilidade.
-- Layout em 3 zonas: player (topo) · input + feedback (meio) · progresso e atalhos (rodapé).
-- Nada de animação longa entre segmentos — o ritmo do loop é o produto.
+Other guidelines:
+- Dark mode as the default (watching video against a light ground is tiring).
+- The player takes the top/centre; the typing field sits **immediately below** the video, with no need to scroll the page at 1366×768.
+- Coloured diff: green = correct, amber = typo, red = wrong, dashed grey = missing, struck through = extra. Colour is **never** the only indicator (an icon/underline too), for accessibility.
+- A 3-zone layout: player (top) · input + feedback (middle) · progress and shortcuts (footer).
+- No long animation between segments — the rhythm of the loop is the product.
 
-> Pendente: definir nome e paleta do app (não bloqueia a Fase 1 — o MVP pode nascer em cinza neutro).
+> Settled: the app is called **Eartype**. Still pending: the palette (it does not block Phase 1 — the MVP can be born in neutral grey).
 
 ---
 
-## 9. Riscos e casos de borda
+## 9. Risks and edge cases
 
-| ID | Risco / caso | Tratamento |
+| ID | Risk / case | Handling |
 |---|---|---|
-| R-01 | Vídeo **sem legenda** em inglês | Mensagem clara ao resolver a URL, antes de carregar o player. |
-| R-02 | Legenda **auto-gerada ruim** (sem pontuação, ASR errado) | Modo tolerante forçado; botão "essa legenda está errada, pular" sem contar como erro. |
-| R-03 | **Embed desabilitado**, restrição de idade ou bloqueio regional | O player emite erro (100/101/150). Detectar e exibir mensagem específica com link para abrir no YouTube. |
-| R-04 | Usuário liga o **CC** no player e vê a resposta | `cc_load_policy: 0`, `controls` reduzido e overlay opcional cobrindo a faixa inferior do vídeo durante o ditado. |
-| R-05 | Legenda **fora de sincronia** com o áudio | Ajuste global de offset (±ms) nas configurações, aplicado ao seek e à pausa. |
-| R-06 | Endpoint de legenda **quebra** (mudança do YouTube) | Camada isolada + fallback SRT/VTT manual (RF-02b), disponível desde o v1 — o app nunca fica inutilizável. |
-| R-07 | Vídeo **muito longo** (2h+) gera centenas de segmentos | Selecionar faixa de tempo (ex.: 05:00–15:00) antes de começar. |
-| R-08 | **Live stream** ou vídeo sem duração fixa | Bloquear com mensagem. |
-| R-09 | Pausa imprecisa (corta a última sílaba) | Lead time configurável e padding de ~150ms no fim do segmento. |
-| R-10 | Perda de dados no IndexedDB (limpar o browser) | Export/import JSON manual + aviso na primeira sessão. |
-| R-11 | Anúncio toca antes do vídeo e o polling pausa no tempo errado | Só iniciar o polling após o estado `PLAYING` e `getCurrentTime()` estar dentro da faixa esperada. |
-| R-12 | Termos de uso do YouTube quanto a acessar legendas por rota não oficial | Uso pessoal e local; não redistribuir legenda; revisar antes de hospedar publicamente. |
+| R-01 | Video with **no English captions** | A clear message when resolving the URL, before loading the player. |
+| R-02 | **Bad auto-generated captions** (no punctuation, ASR errors) | Lenient mode forced; a "these captions are wrong, skip" button that does not count as an error. |
+| R-03 | **Embed disabled**, age restriction or regional block | The player emits an error (100/101/150). Detect it and show a specific message with a link to open on YouTube. |
+| R-04 | The user turns **CC** on in the player and sees the answer | `cc_load_policy: 0`, reduced `controls` and an optional overlay covering the lower band of the video during dictation. |
+| R-05 | Captions **out of sync** with the audio | A global offset adjustment (±ms) in settings, applied to both the seek and the pause. |
+| R-06 | The caption endpoint **breaks** (a YouTube change) | An isolated layer + the manual SRT/VTT fallback (RF-02b), available since v1 — the app is never left unusable. |
+| R-07 | A **very long video** (2h+) generates hundreds of segments | Select a time range (e.g. 05:00–15:00) before starting. |
+| R-08 | A **live stream** or a video with no fixed duration | Block it with a message. |
+| R-09 | An imprecise pause (clipping the last syllable) | A configurable lead time and ~150ms of padding at the end of the segment. |
+| R-10 | Data loss in IndexedDB (clearing the browser) | Manual JSON export/import + a warning on the first session. |
+| R-11 | An ad plays before the video and the polling pauses at the wrong time | Only start polling after the `PLAYING` state and once `getCurrentTime()` is within the expected range. |
+| R-12 | YouTube's terms of service regarding access to captions through an unofficial route | Personal, local use; do not redistribute captions; review before hosting publicly. |
 
 ---
 
-## 10. Perguntas em aberto
+## 10. Open questions
 
-### Resolvidas
-- ~~**Q-01 — Identidade visual.**~~ → Identidade própria; do `DESIGN.md` só a estrutura (§8).
-- ~~**Q-02 — Tamanho do segmento.**~~ → 3–8s / até ~15 palavras, fixo no MVP.
-- ~~**Q-04 — Contrações.**~~ → Aceitar todas as formas equivalentes, incluindo reduções faladas (`gonna`, `wanna`). Detalhe em §5.1.
-- ~~**Q-07 — Escopo do MVP.**~~ → Fase 1: loop puro, sem persistência.
+### Resolved
+- ~~**Q-01 — Visual identity.**~~ → Our own identity; from `DESIGN.md`, only the structure (§8).
+- ~~**Q-02 — Segment size.**~~ → 3–8s / up to ~15 words, fixed in the MVP.
+- ~~**Q-04 — Contractions.**~~ → Accept every equivalent form, including spoken reductions (`gonna`, `wanna`). Detail in §5.1.
+- ~~**Q-07 — MVP scope.**~~ → Phase 1: the bare loop, no persistence.
 
-- ~~**Q-03 — Fallback de legenda.**~~ → Colar SRT/VTT já no v1 (RF-02b), na Fase 1.
-- ~~**Q-05 — Atalhos.**~~ → `Ctrl/Cmd + Enter` para repetir; `Ctrl+R` evitado de propósito.
-- ~~**Q-06 — Números e siglas.**~~ → Dígito = extenso, com tabela limitada (§5.2).
-- ~~**Q-08 — Deploy.**~~ → Só `localhost`, sem deploy.
+- ~~**Q-03 — Caption fallback.**~~ → Pasting SRT/VTT already in v1 (RF-02b), in Phase 1.
+- ~~**Q-05 — Shortcuts.**~~ → `Ctrl/Cmd + Enter` to replay; `Ctrl+R` avoided on purpose.
+- ~~**Q-06 — Numbers and acronyms.**~~ → Digit = spelled out, with a limited table (§5.2).
+- ~~**Q-08 — Deploy.**~~ → `localhost` only, no deploy.
 
-### Em aberto
-- **Q-09 — Vocabulário.** A lista de "palavras problemáticas" (§RF-08) deve virar algo acionável — exportar para Anki/CSV — ou basta vê-la no resumo da sessão? Não bloqueia nada: é da Fase 2 em diante.
+### Open
+- **Q-09 — Vocabulary.** Should the "troublesome words" list (§RF-08) become something actionable — export to Anki/CSV — or is seeing it in the session summary enough? It blocks nothing: Phase 2 onwards.
 
 ---
 
 ## 11. Roadmap
 
-### Fase 1 — MVP (o loop funciona de ponta a ponta)
+### Phase 1 — MVP (the loop works end to end)
 1. Setup: Next.js + TS + Tailwind + Vitest.
-2. `parse-url` + rota `/api/transcript` buscando a legenda em inglês.
-3. Parser SRT/VTT + tela de colar legenda manualmente (RF-02b).
-4. `segmenter` com testes.
-5. Player com IFrame API + pausa automática no fim do segmento.
-6. `normalize` (§5, §5.1, §5.2) + `diff` + feedback visual palavra a palavra.
-7. Avançar / repetir / pular segmento. Progresso X de N. Atalhos essenciais (`Enter`, `Ctrl+Enter`).
+2. `parse-url` + the `/api/transcript` route fetching the English captions.
+3. SRT/VTT parser + the screen for pasting captions by hand (RF-02b).
+4. `segmenter`, with tests.
+5. Player with the IFrame API + automatic pause at the end of the segment.
+6. `normalize` (§5, §5.1, §5.2) + `diff` + word-by-word visual feedback.
+7. Advance / replay / skip a segment. Progress X of N. The essential shortcuts (`Enter`, `Ctrl+Enter`).
 
-**Critério de pronto:** colar a URL de um vídeo com legenda manual e fazer 10 segmentos seguidos sem tocar no mouse.
+**Done criterion:** paste the URL of a video with manual captions and do 10 segments in a row without touching the mouse.
 
-### Fase 2 — Utilizável no dia a dia
-8. Persistência (Dexie): retomar de onde parou, histórico de vídeos.
-9. Resumo de sessão + palavras problemáticas.
-10. Configurações (§RF-09) + controle de velocidade + replay dos últimos 2s.
-11. Suporte decente a legenda auto-gerada (dedupe, filler words).
+### Phase 2 — Usable day to day
+8. Persistence (Dexie): resume where you left off, video history.
+9. Session summary + troublesome words.
+10. Settings (§RF-09) + speed control + replay of the last 2s.
+11. Decent support for auto-generated captions (dedupe, filler words).
 
-### Fase 3 — Refino
-12. Hints (§RF-06) e limite de tentativas.
-13. Modo revisão dos segmentos errados.
-14. Seleção de faixa de tempo para vídeos longos.
-15. Ajuste de offset de sincronia.
-16. Export/import JSON.
-17. Atalhos completos + acessibilidade (foco visível, feedback anunciado por leitor de tela).
+### Phase 3 — Refinement
+12. Hints (§RF-06) and the attempt limit.
+13. Review mode for missed segments.
+14. Time-range selection for long videos.
+15. Sync offset adjustment.
+16. JSON export/import.
+17. Full shortcuts + accessibility (visible focus, feedback announced by a screen reader).
 
-### Ideias para depois (não comprometidas)
-- Fallback de transcrição via Whisper para vídeos sem legenda.
-- Exportar palavras difíceis para Anki/CSV.
-- Modo "shadowing" (repetir falando, com gravação).
-- Estatísticas ao longo do tempo (gráfico de acurácia por semana).
+### Ideas for later (not committed)
+- A Whisper transcription fallback for videos with no captions.
+- Export hard words to Anki/CSV.
+- A "shadowing" mode (repeat out loud, with recording).
+- Statistics over time (an accuracy-per-week chart).
 
 ---
 
-## 12. Métricas de sucesso (pessoais)
-- Praticar 15 minutos sem atrito de UI (nada de recarregar, nada de mouse).
-- Acurácia média subindo ao longo das semanas no mesmo tipo de conteúdo.
-- A lista de palavras problemáticas realmente apontar padrões (ex.: sempre erra `-ed` final, sempre confunde `can` com `can't`).
+## 12. Success metrics (personal)
+- Practise for 15 minutes with no UI friction (no reloading, no mouse).
+- Average accuracy rising over the weeks on the same kind of content.
+- The troublesome-words list actually pointing at patterns (e.g. always missing a final `-ed`, always confusing `can` with `can't`).

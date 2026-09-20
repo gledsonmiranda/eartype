@@ -74,7 +74,11 @@ export function TranscriptPanel({
           const marker = MARKERS[outcome];
 
           return (
-            <li key={segment.index} ref={isCurrent ? current : null}>
+            // `relative` contains the sr-only span below: absolutely positioned
+            // with no positioned ancestor, it would hang off the initial
+            // containing block, escape the list's scroll clip, and stretch the
+            // page into a second scrollbar next to the panel's own.
+            <li key={segment.index} ref={isCurrent ? current : null} className="relative">
               <button
                 type="button"
                 onClick={() => onSelect(index)}

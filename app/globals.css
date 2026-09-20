@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Cinza neutro por enquanto: paleta e identidade são pendência de §8 da spec. */
+/* Neutral grey for now: the palette is a pendency of §8 of the spec. */
 :root {
   --background: #0f0f10;
   --foreground: #e8e8ea;

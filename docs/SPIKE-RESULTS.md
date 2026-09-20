@@ -1,131 +1,130 @@
-# Resultados do spike — 2026-09-20
+# Spike results — 2026-09-20
 
-Passo 0 do `PLAN.md`. O código era descartável e foi apagado depois que virou
-este documento e as decisões que ele carrega; o que ficou está aqui.
-Ambiente: Windows 11, Node 24.19, Python 3.12.10, Chrome.
+Step 0 of `PLAN.md`. The code was throwaway and was deleted once it had turned
+into this document and the decisions it carries; what survived is here.
+Environment: Windows 11, Node 24.19, Python 3.12.10, Chrome.
 
 ---
 
-## S-1 — A legenda vem mesmo?  🔴 → 🟢 (por outra rota)
+## S-1 — Do the captions actually come?  🔴 → 🟢 (by another route)
 
-### O que falhou: `youtubei.js`
-A biblioteca **lista** as faixas de legenda, mas **não consegue baixá-las**:
+### What failed: `youtubei.js`
+The library **lists** the caption tracks but **cannot download them**:
 
-| Tentativa | Resultado |
+| Attempt | Result |
 |---|---|
-| `info.getTranscript()` | HTTP **400** no endpoint `youtubei/v1/get_transcript` |
-| `fetch(track.base_url)` (`timedtext`) | HTTP **200 com 0 bytes** |
-| Idem, `&fmt=json3` / `&fmt=srv3` / default | **200 / 0 bytes** nos três |
-| Idem, nos clientes `WEB`, `ANDROID`, `IOS`, `MWEB`, `TV_EMBEDDED`, `WEB_EMBEDDED` | **200 / 0 bytes** nos seis |
+| `info.getTranscript()` | HTTP **400** on the `youtubei/v1/get_transcript` endpoint |
+| `fetch(track.base_url)` (`timedtext`) | HTTP **200 with 0 bytes** |
+| Same, `&fmt=json3` / `&fmt=srv3` / default | **200 / 0 bytes** on all three |
+| Same, on the `WEB`, `ANDROID`, `IOS`, `MWEB`, `TV_EMBEDDED`, `WEB_EMBEDDED` clients | **200 / 0 bytes** on all six |
 
-`200` com corpo vazio é a assinatura do bloqueio por *proof-of-origin token*: o YouTube aceita a requisição e devolve nada. Não é erro de código nem de vídeo específico — é a porta fechada.
+A `200` with an empty body is the signature of the *proof-of-origin token* block: YouTube accepts the request and returns nothing. It is not a bug in the code nor a quirk of a particular video — it is a closed door.
 
-**Armadilha encontrada no caminho:** com `retrieve_player: false`, o `getInfo` devolve `playability_status: UNPLAYABLE` e **zero faixas** — um falso negativo que faz parecer que o vídeo não tem legenda. Com `retrieve_player: true`, o mesmo vídeo devolve `OK` e as faixas `en(manual), de(manual)`. Qualquer diagnóstico futuro precisa usar `true`.
+**Trap found along the way:** with `retrieve_player: false`, `getInfo` returns `playability_status: UNPLAYABLE` and **zero tracks** — a false negative that makes it look like the video has no captions. With `retrieve_player: true`, the same video returns `OK` and the tracks `en(manual), de(manual)`. Any future diagnosis has to use `true`.
 
-### O que funcionou: `yt-dlp`
-Versão 2026.08.19, na época instalada num venv isolado só para o spike (hoje o
-app espera o `yt-dlp` no PATH ou em `YT_DLP_PATH` — ver README):
+### What worked: `yt-dlp`
+Version 2026.08.19, at the time installed in an isolated venv just for the spike (today the app expects `yt-dlp` on `PATH` or at `YT_DLP_PATH` — see the README):
 
 ```
 yt-dlp --skip-download --write-sub --write-auto-sub --sub-lang "en.*" --sub-format vtt
 ```
 
-Baixou WEBVTT válido: 6 cues, cabeçalho `WEBVTT / Kind: captions / Language: en`, timestamps `00:00:01.200 --> 00:00:03.360` (separador `.`), sem tags inline.
+It downloaded valid WEBVTT: 6 cues, a `WEBVTT / Kind: captions / Language: en` header, `00:00:01.200 --> 00:00:03.360` timestamps (`.` separator), no inline tags.
 
-**Observações:**
-- `WARNING: ... no impersonate target is available` — aviso, não erro; o download funcionou. Resolvível com `curl_cffi` se um dia atrapalhar.
-- **HTTP 429 (Too Many Requests)** ao puxar a terceira faixa do mesmo vídeo em sequência rápida. Consequência de design: **baixar exatamente uma faixa por vídeo** e cachear com força.
+**Observations:**
+- `WARNING: ... no impersonate target is available` — a warning, not an error; the download worked. Solvable with `curl_cffi` if it ever gets in the way.
+- **HTTP 429 (Too Many Requests)** when pulling the third track of the same video in quick succession. Design consequence: **download exactly one track per video** and cache hard.
 
-### S-1b — o Next.js consegue, chamando o yt-dlp como processo?  🟢 SIM
+### S-1b — can Next.js do it, calling yt-dlp as a process?  🟢 YES
 
-Pergunta levantada ao decidir a arquitetura: *se o Node está bloqueado, a rota do Next.js não estaria também?*
+A question raised while deciding the architecture: *if Node is blocked, wouldn't the Next.js route be blocked too?*
 
-**Não.** O bloqueio é de **quem faz a requisição HTTP**, não do runtime. Testado com `child_process.execFile` disparando o yt-dlp a partir do Node:
+**No.** The block is on **whoever makes the HTTP request**, not on the runtime. Tested with `child_process.execFile` firing yt-dlp from Node:
 
 ```json
 { "file": "jNQXAC9IVRw.en.vtt", "bytes": 440, "cues": 6, "ms": 2316 }
 ```
 
-**Três condições que isso impõe:**
-1. **`--sub-lang en`, nunca `en.*`.** O glob casava com `en`, `en-en` e `en-de`; a terceira requisição tomou **429** e, como o yt-dlp sai com código diferente de zero, derrubou a chamada inteira — inclusive as duas faixas que já tinham baixado com sucesso.
-2. **A rota precisa do runtime Node do Next.js, não do Edge** — Edge não tem `child_process`.
-3. **O IP continua contando.** Localhost está bem; de um servidor na nuvem o bloqueio voltaria.
+**Three conditions this imposes:**
+1. **`--sub-lang en`, never `en.*`.** The glob matched `en`, `en-en` and `en-de`; the third request took a **429** and, since yt-dlp exits non-zero, it took the whole call down with it — including the two tracks that had already downloaded successfully.
+2. **The route needs Next.js's Node runtime, not Edge** — Edge has no `child_process`.
+3. **The IP still counts.** Localhost is fine; from a cloud server the block would be back.
 
-**Custo de UX:** ~**2,3s** por vídeo na primeira busca. Exige estado de carregamento explícito, e torna o cache obrigatório, não opcional.
+**UX cost:** ~**2.3s** per video on the first lookup. It demands an explicit loading state, and it makes caching mandatory rather than optional.
 
-### Veredito
-A rota automática em Node puro está morta hoje. O `yt-dlp` resolve — inclusive chamado de dentro do Next.js — ao custo de um **binário externo (Python)**. Ver `PLAN.md` §T-06.
+### Verdict
+The automatic route in plain Node is dead today. `yt-dlp` solves it — including when called from inside Next.js — at the cost of an **external (Python) binary**. See `PLAN.md` §T-06.
 
-### S-1c — cobertura nos 5 vídeos reais  🟢 5/5
+### S-1c — coverage across the 5 real videos  🟢 5/5
 
-Lista em `videos-for-test.md`. Uma faixa `en` por vídeo, `--write-sub --write-auto-sub`:
+List in `videos-for-test.md`. One `en` track per video, `--write-sub --write-auto-sub`:
 
-| # | tipo | videoId | duração | legenda | cues | VTT |
+| # | kind | videoId | duration | captions | cues | VTT |
 |---|---|---|---|---|---|---|
 | 1 | manual (MKBHD) | `ohqxP8EEumo` | 18min | **manual** (`en`, +ja/pt/ru/tr/vi) | 431 | 31 KB |
-| 2 | só ASR | `45oG6w7bvtM` | 19min | auto | 776 | 132 KB |
-| 3 | longo | `8dHEG7WxR4c` | **1h26** | auto | 5.334 | 918 KB |
-| 4 | canal pequeno (4 mil views) | `xxdlUHSWM7E` | 14min | auto | 798 | 137 KB |
-| 5 | suspeita de restrição | `Fy291Q3a6zs` | 26min | auto | 1.180 | 187 KB |
+| 2 | ASR only | `45oG6w7bvtM` | 19min | auto | 776 | 132 KB |
+| 3 | long | `8dHEG7WxR4c` | **1h26** | auto | 5,334 | 918 KB |
+| 4 | small channel (4k views) | `xxdlUHSWM7E` | 14min | auto | 798 | 137 KB |
+| 5 | suspected restriction | `Fy291Q3a6zs` | 26min | auto | 1,180 | 187 KB |
 
-Nenhuma restrição apareceu: os cinco baixaram em sequência, sem 429 e sem cookies. O vídeo 3 mostra o teto real de tamanho — **918 KB e 5.334 cues** numa resposta só, o que pesa no cache do T-06.
+No restriction showed up: all five downloaded in sequence, with no 429 and no cookies. Video 3 shows the real size ceiling — **918 KB and 5,334 cues** in a single response, which weighs on T-06's cache.
 
-**Bloqueio novo no meio do caminho:** o YouTube passou a responder `Sign in to confirm you're not a bot` para **todos** os vídeos e **todos** os clientes (`tv`, `android_vr`, `web_embedded`, `mweb`) — bloqueio por IP, provável herança do 429 do dia anterior. Destravou sozinho em poucos minutos, sem nenhuma ação nossa — nenhuma das alternativas testadas (outro cliente, runtime JS, cookies) teve efeito. Duas lições:
+**A new block mid-way:** YouTube started answering `Sign in to confirm you're not a bot` for **every** video and **every** client (`tv`, `android_vr`, `web_embedded`, `mweb`) — an IP block, probably inherited from the previous day's 429. It cleared on its own within minutes, with no action on our part — none of the alternatives tried (another client, a JS runtime, cookies) had any effect. Two lessons:
 
-1. **`--js-runtimes node` agora é obrigatório.** Sem um runtime JS o yt-dlp cai num caminho deprecado e some com metadados (`No title found in player responses`). O Node já é dependência do projeto, então não custa nada.
-2. **Cookies do navegador não são plano B viável no Windows.** `--cookies-from-browser chrome` falha com `Failed to decrypt with DPAPI` por causa do App-Bound Encryption do Chrome — nem com o navegador fechado funciona. O plano B real continua sendo o RF-02b (colar legenda à mão).
+1. **`--js-runtimes node` is now mandatory.** Without a JS runtime, yt-dlp falls into a deprecated path and loses metadata (`No title found in player responses`). Node is already a dependency of the project, so it costs nothing.
+2. **Browser cookies are not a viable plan B on Windows.** `--cookies-from-browser chrome` fails with `Failed to decrypt with DPAPI` because of Chrome's App-Bound Encryption — not even with the browser closed. The real plan B remains RF-02b (paste the captions by hand).
 
-### O que as legendas reais revelaram sobre o segmentador (T-04)
+### What the real captions revealed about the segmenter (T-04)
 
-Rodando `parseCaptions` + `segment` sobre os cinco arquivos, quatro defeitos que as fixtures não pegaram:
+Running `parseCaptions` + `segment` over the five files, four defects the fixtures never caught:
 
-| defeito | onde | exemplo |
+| defect | where | example |
 |---|---|---|
-| **Dedup do rolling text falha com repetição de 1–2 palavras** — `MIN_OVERLAP = 3` deixa passar | todos os ASR | `…upgrading the wrong things.` / `things. You end up spending` |
-| **Segmento estoura o `maxMs` de 8s** — um cue único longo nunca é dividido | #5 | um segmento de **21,1s**: `"for the rest of my life."` |
-| **`>>` sobrevive à limpeza** quando não está no início do cue | #4, #5 | um segmento inteiro que é só `">>"` |
-| **Segmentos abaixo de 1,5s** — quando o cue seguinte estoura o limite de palavras, o pendente curto é emitido como está | #1 (15), #3 (120) | `"an S update."` (0,83s) |
+| **Rolling-text dedupe fails on a 1–2 word repetition** — `MIN_OVERLAP = 3` lets it through | every ASR file | `…upgrading the wrong things.` / `things. You end up spending` |
+| **Segment blows past the 8s `maxMs`** — a single long cue is never split | #5 | a **21.1s** segment: `"for the rest of my life."` |
+| **`>>` survives the cleanup** when it is not at the start of the cue | #4, #5 | a whole segment that is just `">>"` |
+| **Segments under 1.5s** — when the next cue blows the word limit, the short pending one is emitted as is | #1 (15), #3 (120) | `"an S update."` (0.83s) |
 
-Também: **5 segmentos passam de 15 palavras** no vídeo 1, todos de um cue só — o segmentador junta cues, mas nunca parte um.
+Also: **5 segments exceed 15 words** in video 1, all of them from a single cue — the segmenter joins cues, but never splits one.
 
-Os critérios de "pronto quando" do T-04 valem contra as fixtures, não contra legenda real. Corrigido no **T-04b** (ver `PLAN.md`), com os cinco arquivos promovidos a fixture em `tests/fixtures/corpus/`:
+T-04's "done when" criteria hold against the fixtures, not against real captions. Fixed in **T-04b** (see `PLAN.md`), with the five files promoted to fixtures in `tests/fixtures/corpus/`:
 
-| defeito | como ficou |
+| defect | how it ended up |
 |---|---|
-| rolling text de 1–2 palavras | o **cue fantasma** de 10ms passou a ser o sinal: o que ele mostrou é prefixo estrutural e é cortado em qualquer tamanho |
-| segmento de 21,1s | o parser guarda quando a **última palavra começa** (`Cue.speechEndMs`, das marcas `<00:00:01.000>`) e o segmentador corta o silêncio final |
-| `>>` no meio do cue | limpeza global, não só no início — e a etiqueta de speaker que vier junto |
-| segmentos < 1,5s | os limites **esticam até `maxWords + 5`** em vez de emitir um caco; o que sobra é fundido com o vizinho |
+| 1–2 word rolling text | the 10ms **ghost cue** became the signal: whatever it showed is a structural prefix and gets cut at any length |
+| the 21.1s segment | the parser records when the **last word starts** (`Cue.speechEndMs`, from the `<00:00:01.000>` marks) and the segmenter trims the trailing silence |
+| `>>` mid-cue | global cleanup, not just at the start — along with any speaker tag that comes with it |
+| segments < 1.5s | the limits **stretch to `maxWords + 5`** instead of emitting a fragment; whatever is left is merged with its neighbour |
 
-Nos cinco vídeos, depois: **nenhum** segmento abaixo de 1,5s, **nenhum** acima de 8s, e fronteiras repetindo 3+ palavras: **zero** (eram dezenas).
+Across the five videos, afterwards: **no** segment under 1.5s, **none** over 8s, and boundaries repeating 3+ words: **zero** (there had been dozens).
 
 ---
 
-## S-2 — A pausa é precisa o bastante?  🟢 VERDE
+## S-2 — Is the pause precise enough?  🟢 GREEN
 
-10 trials, `seekTo(alvo − 2s)` → `playVideo()` → polling → `pauseVideo()` no alvo. Medido o tempo real em que o vídeo parou.
+10 trials, `seekTo(target − 2s)` → `playVideo()` → polling → `pauseVideo()` at the target. Measured the real time the video stopped at.
 
-| Configuração | Mediana | Pior caso | Amostras |
+| Configuration | Median | Worst case | Samples |
 |---|---|---|---|
 | poll 100ms, lead 0 | **+64ms** | +77ms | +62, +63, +60, +62, +65, +64, +77, +64 |
 | poll 100ms, lead 60ms | −33ms | −37ms | −33, −35, −31, −32, −26, −37 |
 | poll 50ms, lead 60ms | −38ms | −39ms | −36, −37, −38, −35, −39, −39 |
 
-**Leitura:**
-- O erro é **pequeno e altamente determinístico** — variação de ±8ms entre trials. Isso é melhor do que a spec supunha; dá para compensar com precisão.
-- **Polling de 50ms não melhora nada** (−38 vs −33). Fica em 100ms, que é mais barato.
-- Lead de 60ms **corrige demais** e passa a pausar *antes* do alvo. Para ditado, pausar cedo é pior que pausar tarde: corta a última sílaba. **Decisão: lead 0**, aceitando os ~64ms a mais, que na prática caem no silêncio entre frases.
+**Reading:**
+- The error is **small and highly deterministic** — ±8ms of variation between trials. That is better than the spec assumed; it can be compensated for precisely.
+- **50ms polling buys nothing** (−38 vs −33). It stays at 100ms, which is cheaper.
+- A 60ms lead **over-corrects** and starts pausing *before* the target. For dictation, pausing early is worse than pausing late: it clips the last syllable. **Decision: lead 0**, accepting the extra ~64ms, which in practice land in the silence between sentences.
 
-**Bug do próprio teste (não do mecanismo):** a primeira versão da página dava timeout porque disparava `playVideo()` sem esperar o `seekTo` assentar. Corrigido com 600ms de espera após o seek — **isso vira requisito do wrapper do player** (T-07): não começar a contar antes do seek concluir.
+**A bug in the test itself (not in the mechanism):** the first version of the page timed out because it fired `playVideo()` without waiting for the `seekTo` to settle. Fixed with a 600ms wait after the seek — **this becomes a requirement of the player wrapper** (T-07): do not start counting before the seek completes.
 
 ---
 
-## Impacto no plano
+## Impact on the plan
 
-| | Antes | Depois |
+| | Before | After |
 |---|---|---|
-| T-06 (busca de legenda) | `youtubei.js` numa rota Next.js | **`yt-dlp` validado nos 5 vídeos** — e precisa de `--js-runtimes node` e de tolerar bloqueio temporário por IP |
-| T-04 (segmentador) | fechado | **reabre** — 4 defeitos só visíveis em legenda real (ver S-1c) |
-| T-07 (player) | polling 100ms + lead ~120ms | polling 100ms, **lead 0**, e esperar o seek assentar antes de contar |
-| T-03 (parser SRT/VTT) | plano B | **sobe de importância** — é o caminho garantido |
-| §9 R-06 da spec | risco futuro | **risco materializado no dia 1** |
+| T-06 (caption lookup) | `youtubei.js` in a Next.js route | **`yt-dlp` validated on all 5 videos** — and it needs `--js-runtimes node` and has to tolerate a temporary IP block |
+| T-04 (segmenter) | closed | **reopens** — 4 defects visible only in real captions (see S-1c) |
+| T-07 (player) | 100ms polling + ~120ms lead | 100ms polling, **lead 0**, and wait for the seek to settle before counting |
+| T-03 (SRT/VTT parser) | plan B | **rises in importance** — it is the guaranteed path |
+| §9 R-06 of the spec | a future risk | **a risk that materialised on day 1** |

@@ -1,102 +1,102 @@
-# Design — escalas e padrões
+# Design — scales and patterns
 
-O que a interface usa como sistema. Não é identidade visual: paleta, fontes e nome
-são pendência declarada no §8 da `SPEC.md`, e o MVP nasceu em cinza neutro de
-propósito.
+What the interface uses as a system. This is not a visual identity: palette and
+fonts are a declared pendency in §8 of `SPEC.md`, and the MVP was born in
+neutral grey on purpose. (The name is settled — **Eartype**.)
 
-> Este arquivo substitui um design system de 39 KB extraído de um site de marca de
-> terceiro. Só a **estrutura** dele era aproveitável — escala de espaçamento,
-> hierarquia tipográfica, escala de raios e estados de componente —, e é isso que
-> está aqui, sem cor de marca, logotipo ou nome alheio. A decisão está registrada
-> no §8 da spec.
+> This file replaces a 39 KB design system extracted from a third party's brand
+> site. Only its **structure** was usable — spacing scale, type hierarchy, radius
+> scale and component states — and that is what is here, with no brand colour,
+> logo or borrowed name. The decision is recorded in §8 of the spec.
 
-## Espaçamento
+## Spacing
 
-Base de 8px, com passos de 4px onde o inline aperta.
+An 8px base, with 4px steps where inline layout gets tight.
 
-| token | valor | uso |
+| token | value | use |
 | --- | --- | --- |
-| `xxs` | 4px | gap entre ícone e rótulo |
-| `xs` | 8px | gap entre controles irmãos |
-| `sm` | 12px | padding interno de input |
-| `md` | 16px | padding de card, gap de formulário |
-| `lg` | 24px | separação entre blocos de uma seção |
-| `xl` | 32px | separação entre seções |
-| `xxl` | 48px | respiro de topo/rodapé |
+| `xxs` | 4px | gap between icon and label |
+| `xs` | 8px | gap between sibling controls |
+| `sm` | 12px | inner padding of an input |
+| `md` | 16px | card padding, form gap |
+| `lg` | 24px | separation between blocks of a section |
+| `xl` | 32px | separation between sections |
+| `xxl` | 48px | breathing room at top/bottom |
 
-No Tailwind isso é `gap-1 / 2 / 3 / 4 / 6 / 8 / 12` — a escala padrão já bate.
+In Tailwind that is `gap-1 / 2 / 3 / 4 / 6 / 8 / 12` — the default scale already
+matches.
 
-## Tipografia
+## Typography
 
-Duas famílias, com papéis separados:
+Two families, with separate roles:
 
-- **UI:** sans de sistema (`ui-sans-serif, system-ui`). Rótulo, botão, rodapé.
-- **Ditado:** **monoespaçada**. O texto da legenda, o que você digita e o diff
-  palavra a palavra. Alinhamento vertical é o que torna o diff legível — em
-  proporcional, palavra certa e palavra errada não se encaram.
+- **UI:** system sans (`ui-sans-serif, system-ui`). Labels, buttons, footer.
+- **Dictation:** **monospace**. The caption text, what you type, and the
+  word-by-word diff. Vertical alignment is what makes the diff readable — in a
+  proportional face, the right word and the wrong word never line up.
 
-| papel | tamanho | peso | line-height |
+| role | size | weight | line-height |
 | --- | --- | --- | --- |
-| título de tela | 24px | 600 | 1.25 |
-| título de seção | 18px | 600 | 1.25 |
-| texto do ditado | 18px | 400 | 1.5 (mono) |
-| corpo | 14px | 400 | 1.5 |
-| rodapé / metadado | 12px | 400 | 1.5 |
+| screen title | 24px | 600 | 1.25 |
+| section title | 18px | 600 | 1.25 |
+| dictation text | 18px | 400 | 1.5 (mono) |
+| body | 14px | 400 | 1.5 |
+| footer / metadata | 12px | 400 | 1.5 |
 
-## Raios
+## Radii
 
-| token | valor | uso |
+| token | value | use |
 | --- | --- | --- |
-| `sm` | 4px | nada estrutural; detalhe |
+| `sm` | 4px | nothing structural; a detail |
 | `md` | 6–8px | input, textarea, card, player |
-| `full` | 9999px | botão (pill) e chip de ação |
+| `full` | 9999px | button (pill) and action chip |
 
-Superfícies que ocupam a largura toda ficam sem raio.
+Surfaces that span the full width carry no radius.
 
-## Estados de componente
+## Component states
 
-Todo controle define os cinco, e nenhum depende só de cor:
+Every control defines all five, and none of them depends on colour alone:
 
-| estado | como se mostra |
+| state | how it shows |
 | --- | --- |
-| default | borda `zinc-700` sobre fundo `zinc-900` |
-| hover | borda clareia para `zinc-400` |
-| pressed | fundo escurece um passo |
-| disabled | opacidade 40%, cursor padrão, sem hover |
-| focus | borda de 2px — o foco do teclado precisa ser visível, porque o app inteiro é operado por teclado |
+| default | `zinc-700` border on a `zinc-900` ground |
+| hover | border lightens to `zinc-400` |
+| pressed | ground darkens one step |
+| disabled | 40% opacity, default cursor, no hover |
+| focus | 2px border — keyboard focus has to be visible, because the whole app is driven from the keyboard |
 
-## Cores do diff
+## Diff colours
 
-Cada estado do diff carrega **cor e forma**, nessa ordem de importância — cor
-nunca é o único indicador (§8 da spec, acessibilidade):
+Each diff state carries **colour and shape**, in that order of importance —
+colour is never the only indicator (§8 of the spec, accessibility):
 
-| estado | cor | forma |
+| state | colour | shape |
 | --- | --- | --- |
-| certo | verde | nenhuma |
-| erro de digitação | âmbar | sublinhado pontilhado |
-| palavra errada | vermelho | riscado, com a correta ao lado |
-| faltando | cinza | caixa tracejada |
-| sobrando | cinza | riscado |
+| correct | green | none |
+| typo | amber | dotted underline |
+| wrong word | red | struck through, with the right one beside it |
+| missing | grey | dashed box |
+| extra | grey | struck through |
 
-Cada token também carrega o rótulo em texto para leitor de tela.
+Every token also carries its label as text for a screen reader.
 
 ## Layout
 
-Três zonas, nessa ordem vertical (§8): **player** no topo, **digitação e
-correção** no meio, **progresso e atalhos** no rodapé. O campo de digitação fica
-logo abaixo do vídeo — em 1366×768 não pode ser preciso rolar a página para
-digitar.
+Three zones, in this vertical order (§8): **player** on top, **typing and
+correction** in the middle, **progress and shortcuts** in the footer. The typing
+field sits right below the video — at 1366×768 you must not have to scroll the
+page to type.
 
-Largura máxima de ~768px na entrada e ~896px na prática. O player ocupa a largura
-da coluna em 16:9.
+Maximum width of ~768px on entry and ~896px in practice. The player fills the
+column width at 16:9.
 
-## Tema
+## Theme
 
-Escuro por padrão: assistir vídeo com fundo claro cansa. Tema claro é Fase 2
-(§RF-09).
+Dark by default: watching video against a light ground is tiring. A light theme
+is Phase 2 (§RF-09).
 
-## Movimento
+## Motion
 
-Quase nenhum. O ritmo do loop é o produto, e uma animação entre trechos atrasa o
-próximo áudio. A única espera deliberada são os ~700ms depois de um acerto, para
-a resposta certa ser lida antes de avançar.
+Almost none. The rhythm of the loop is the product, and an animation between
+segments delays the next audio. The only deliberate wait is the 1.2s after a
+clean answer, so the hit can register before the screen moves on.
