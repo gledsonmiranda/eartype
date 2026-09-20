@@ -174,9 +174,10 @@ export function PracticeScreen({
       return;
     }
 
-    // Space pauses/resumes — but only before typing starts, so it still
-    // works as a normal word separator once there's an answer in progress.
-    if (event.key === ' ' && typed === '') {
+    // Ctrl+Space pauses/resumes — plain Space stays a normal word separator,
+    // needed from the first keystroke now that live per-word feedback reads
+    // the input as you type.
+    if (event.key === ' ' && event.ctrlKey) {
       event.preventDefault();
       togglePause();
       return;
@@ -331,7 +332,7 @@ export function PracticeScreen({
             {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
           </span>
           <span className="hidden sm:inline">
-            Enter verifica · Ctrl+Enter repete · Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
+            Enter verifica · Ctrl+Enter repete · Ctrl+Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
             navega
           </span>
           <span className="flex items-center gap-2">
