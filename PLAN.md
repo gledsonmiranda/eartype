@@ -110,13 +110,21 @@ Wrapper da IFrame API: `seekTo` + `play` + polling + `pause` no fim do segmento,
 Parâmetros medidos no spike: **polling 100ms, lead 0** (erro real +64ms, desvio ±8ms). Requisito descoberto no S-2: **esperar o `seekTo` assentar (~600ms) antes de começar a contar** — sem isso a contagem começa no tempo antigo e o segmento nunca pausa.
 **Pronto quando:** toca o segmento 3, pausa no fim, e repetir 5 vezes seguidas para sempre no mesmo lugar (sem drift acumulado). Erros 100/101/150 do player caem em mensagem específica.
 
+**Verificado no navegador:** o replay do trecho 1 fez seek em **16,720s** e parou em **20,951s** — o trecho acaba em 20,883s, ou seja **+68ms**, dentro dos +64ms ±8ms que o S-2 mediu.
+
 ### T-08 — Tela de prática
 Junta tudo: player + input + diff + progresso X de N. Atalhos `Enter` (verificar) e `Ctrl+Enter` (repetir). Cinza neutro, sem identidade visual ainda.
 **Pronto quando:** o critério de pronto da Fase 1 — colar uma URL e fazer **10 segmentos seguidos sem tocar no mouse**.
 
+**Verificado no navegador:** dez trechos encadeados só com digitação e Enter, terminando em "trecho 11 de 279", sem uma mensagem de erro no console. Acerto exato avança sozinho; erro mostra o diff e o segundo Enter aceita e segue.
+
+**Correção de rota:** a primeira versão forçava modo estrito em legenda manual, contrariando a decisão do §2 da spec (*tolerante por padrão, estrito é opção*). Agora o padrão é tolerante sempre, e o estrito é um checkbox — oferecido só quando há pontuação para cobrar, isto é, em legenda manual.
+
 ### T-09 — Tela de entrada + colar legenda
 Home com o campo de URL, tratamento dos erros tipados do T-06 e o caminho "colar legenda" (RF-02b) sempre visível.
 **Pronto quando:** um vídeo sem legenda leva, em dois cliques, a praticar com SRT colado à mão.
+
+**Verificado no navegador:** URL + "colar legenda à mão" + SRT digitado à mão → prática rodando pelos timestamps colados, com preview (`2 cues · cobre 0min25`) antes de começar. Um `t=90` na URL entra direto no trecho 22.
 
 ---
 

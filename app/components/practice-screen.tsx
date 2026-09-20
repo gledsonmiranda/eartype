@@ -57,14 +57,17 @@ export function PracticeScreen({
   const [revealed, setRevealed] = useState(false);
   const [playerError, setPlayerError] = useState<PlayerErrorCode | null>(null);
   const [ready, setReady] = useState(false);
+  // §2 — lenient by default, always. Strict is an option, and only an option
+  // where there is punctuation to be strict about (RF-02).
+  const [strict, setStrict] = useState(false);
 
   const player = useRef<YouTubePlayer | null>(null);
   const playback = useRef<Playback | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
   const segment = segments[session.index];
-  // ASR captions have no punctuation to compare against (§RF-02).
-  const mode: CorrectionMode = captionKind === 'manual' ? 'strict' : 'lenient';
+  const canBeStrict = captionKind === 'manual';
+  const mode: CorrectionMode = strict && canBeStrict ? 'strict' : 'lenient';
 
   const play = useCallback(() => {
     const current = player.current;
@@ -159,7 +162,8 @@ export function PracticeScreen({
       return;
     }
 
-    if (event.altKey && event.key.toLowerCase() === 'r') {
+    // RF-10 spells this one out: Ctrl+→ skips the segment.
+    if (event.ctrlKey && event.key === 'ArrowRight') {
       event.preventDefault();
       reveal();
       return;
@@ -268,7 +272,7 @@ export function PracticeScreen({
                 <Action onClick={acceptAndMoveOn}>aceitar e seguir · Enter</Action>
               </>
             )}
-            {result === null && !revealed && <Action onClick={reveal}>revelar · Alt+R</Action>}
+            {result === null && !revealed && <Action onClick={reveal}>revelar · Ctrl+→</Action>}
             {revealed && <Action onClick={acceptAndMoveOn}>próximo · Enter</Action>}
           </div>
         </section>
@@ -280,9 +284,22 @@ export function PracticeScreen({
           {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
         </span>
         <span className="hidden sm:inline">
-          Enter verifica · Ctrl+Enter repete · Alt+R revela · Alt+←/→ navega
+          Enter verifica · Ctrl+Enter repete · Ctrl+→ revela · Alt+←/→ navega
         </span>
-        <span>{captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}</span>
+        <span className="flex items-center gap-2">
+          {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}
+          {canBeStrict && (
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={strict}
+                onChange={(event) => setStrict(event.target.checked)}
+                className="accent-zinc-300"
+              />
+              modo estrito
+            </label>
+          )}
+        </span>
       </footer>
     </main>
   );
