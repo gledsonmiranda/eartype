@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Código descartável do Passo 0, incluindo o venv do yt-dlp.
+    "spike/**",
   ]),
 ]);
 

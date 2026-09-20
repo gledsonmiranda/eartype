@@ -2,14 +2,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseCaptions } from '@/lib/captions/parse-captions';
-import { contarPalavras, segment, stripNonSpeech } from '@/lib/segmenter';
+import { countWords, segment, stripNonSpeech } from '@/lib/segmenter';
 import type { Cue } from '@/types';
 
-const fixture = (nome: string) =>
-  parseCaptions(readFileSync(fileURLToPath(new URL(`./fixtures/${nome}`, import.meta.url)), 'utf8'))
+const fixture = (name: string) =>
+  parseCaptions(readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), 'utf8'))
     .cues;
 
-/** Açúcar para montar cues nos testes: `cue(0, 2, 'texto')` em segundos. */
+/** Sugar for building cues in tests: `cue(0, 2, 'text')` in seconds. */
 const cue = (startSec: number, endSec: number, text: string, id = ''): Cue => ({
   id: id || `c${startSec}`,
   startMs: startSec * 1000,
@@ -29,171 +29,178 @@ describe('stripNonSpeech', () => {
     ['NARRATOR: once upon a time', 'once upon a time'],
     ['DR. SMITH: hello', 'hello'],
     ['Well: that is different', 'Well: that is different'],
-    ['texto normal', 'texto normal'],
-  ])('%s → %s', (entrada, esperado) => {
-    expect(stripNonSpeech(entrada)).toBe(esperado);
+    ['ordinary text', 'ordinary text'],
+  ])('%s → %s', (input, expected) => {
+    expect(stripNonSpeech(input)).toBe(expected);
   });
 });
 
-describe('segment — regras de agrupamento', () => {
-  it('junta cues curtos até alcançar o alvo mínimo', () => {
-    const s = segment([
+describe('segment — grouping rules', () => {
+  it('joins short cues until it reaches the target floor', () => {
+    const segments = segment([
       cue(0, 1, 'the cool thing'),
       cue(1, 2, 'about these guys'),
       cue(2, 3.5, 'is that they have really long trunks'),
     ]);
-    expect(s).toHaveLength(1);
-    expect(s[0].referenceText).toBe('the cool thing about these guys is that they have really long trunks');
-    expect(s[0].startMs).toBe(0);
-    expect(s[0].endMs).toBe(3500);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].referenceText).toBe(
+      'the cool thing about these guys is that they have really long trunks',
+    );
+    expect(segments[0].startMs).toBe(0);
+    expect(segments[0].endMs).toBe(3500);
   });
 
-  it('quebra na pontuação final assim que passa do alvo mínimo', () => {
-    const s = segment([
+  it('breaks at sentence-final punctuation once past the target floor', () => {
+    const segments = segment([
       cue(0, 3.2, 'All right, so here we are.'),
       cue(3.2, 6.4, 'In front of the elephants.'),
     ]);
-    expect(s.map((x) => x.referenceText)).toEqual([
+    expect(segments.map((s) => s.referenceText)).toEqual([
       'All right, so here we are.',
       'In front of the elephants.',
     ]);
   });
 
-  it('abaixo do alvo mínimo, a pontuação final não basta para quebrar', () => {
-    const s = segment([
+  it('below the target floor, final punctuation is not enough to break', () => {
+    const segments = segment([
       cue(0, 2, 'All right, so here we are.'),
       cue(2, 4, 'In front of the elephants.'),
     ]);
-    expect(s.map((x) => x.referenceText)).toEqual([
+    expect(segments.map((s) => s.referenceText)).toEqual([
       'All right, so here we are. In front of the elephants.',
     ]);
   });
 
-  it('quebra num silêncio ≥ 700ms quando não há pontuação', () => {
-    const s = segment([
+  it('breaks on a silence of 700ms or more when there is no punctuation', () => {
+    const segments = segment([
       cue(0, 3.2, 'all right so here we are'),
       cue(4.5, 7, 'in front of the elephants'),
     ]);
-    expect(s).toHaveLength(2);
+    expect(segments).toHaveLength(2);
   });
 
-  it('não quebra num silêncio curto', () => {
-    const s = segment([
+  it('does not break on a short silence', () => {
+    const segments = segment([
       cue(0, 3.2, 'all right so here we are'),
       cue(3.4, 5.5, 'in front of the elephants'),
     ]);
-    expect(s).toHaveLength(1);
+    expect(segments).toHaveLength(1);
   });
 
-  it('nunca quebra no meio de um cue', () => {
-    const s = segment([cue(0, 4, 'uma frase. outra frase no mesmo cue.')]);
-    expect(s).toHaveLength(1);
-    expect(s[0].sourceCueIds).toHaveLength(1);
+  it('never breaks in the middle of a cue', () => {
+    const segments = segment([cue(0, 4, 'one sentence. another one in the same cue.')]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].sourceCueIds).toHaveLength(1);
   });
 
-  it('respeita o teto de palavras', () => {
+  it('respects the word cap', () => {
     const cues = Array.from({ length: 8 }, (_, i) =>
-      cue(i * 0.5, (i + 1) * 0.5, 'uma duas três', `c${i}`),
+      cue(i * 0.5, (i + 1) * 0.5, 'one two three', `c${i}`),
     );
-    const s = segment(cues);
-    expect(s.every((x) => contarPalavras(x.referenceText) <= 15)).toBe(true);
+    expect(segment(cues).every((s) => countWords(s.referenceText) <= 15)).toBe(true);
   });
 
-  it('respeita o teto de duração', () => {
-    const cues = Array.from({ length: 6 }, (_, i) => cue(i * 2.5, (i + 1) * 2.5, `frase ${i}`, `c${i}`));
-    const s = segment(cues);
-    expect(s.every((x) => x.endMs - x.startMs <= 8000)).toBe(true);
+  it('respects the duration cap', () => {
+    const cues = Array.from({ length: 6 }, (_, i) =>
+      cue(i * 2.5, (i + 1) * 2.5, `sentence ${i}`, `c${i}`),
+    );
+    expect(segment(cues).every((s) => s.endMs - s.startMs <= 8000)).toBe(true);
   });
 
-  it('cue grande demais sozinho passa inteiro — a spec proíbe quebrar no meio', () => {
-    const grande = cue(0, 20, Array.from({ length: 40 }, (_, i) => `p${i}`).join(' '));
-    const s = segment([grande]);
-    expect(s).toHaveLength(1);
-    expect(contarPalavras(s[0].referenceText)).toBe(40);
+  it('an oversized lone cue passes through whole — the spec forbids splitting one', () => {
+    const huge = cue(0, 20, Array.from({ length: 40 }, (_, i) => `w${i}`).join(' '));
+    const segments = segment([huge]);
+    expect(segments).toHaveLength(1);
+    expect(countWords(segments[0].referenceText)).toBe(40);
   });
 
-  it('indexa os segmentos em sequência a partir de zero', () => {
+  it('indexes the segments in order from zero', () => {
     const cues = Array.from({ length: 10 }, (_, i) =>
-      cue(i * 3, i * 3 + 2.9, `frase número ${i} com algumas palavras.`, `c${i}`),
+      cue(i * 3, i * 3 + 2.9, `sentence number ${i} with a few words.`, `c${i}`),
     );
-    expect(segment(cues).map((x) => x.index)).toEqual([...Array(segment(cues).length).keys()]);
+    const segments = segment(cues);
+    expect(segments.map((s) => s.index)).toEqual([...segments.keys()]);
   });
 
-  it('guarda a origem de cada segmento', () => {
-    const s = segment([cue(0, 1.5, 'primeira parte', 'a'), cue(1.5, 3.2, 'segunda parte aqui', 'b')]);
-    expect(s[0].sourceCueIds).toEqual(['a', 'b']);
+  it('keeps track of where each segment came from', () => {
+    const segments = segment([
+      cue(0, 1.5, 'the first part', 'a'),
+      cue(1.5, 3.2, 'the second part here', 'b'),
+    ]);
+    expect(segments[0].sourceCueIds).toEqual(['a', 'b']);
   });
 
-  it('legenda vazia devolve lista vazia', () => {
+  it('an empty caption gives an empty list', () => {
     expect(segment([])).toEqual([]);
     expect(segment([cue(0, 2, '[Music]')])).toEqual([]);
   });
 
-  it('a sobra curta do fim volta para o segmento anterior', () => {
-    const s = segment([
-      cue(0, 3.5, 'uma frase razoavelmente longa aqui.'),
-      cue(3.5, 3.9, 'sobra'),
+  it('a short trailing scrap goes back into the previous segment', () => {
+    const segments = segment([
+      cue(0, 3.5, 'a reasonably long sentence right here.'),
+      cue(3.5, 3.9, 'scrap'),
     ]);
-    expect(s).toHaveLength(1);
-    expect(s[0].referenceText).toMatch(/sobra$/);
-    expect(s[0].endMs).toBe(3900);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].referenceText).toMatch(/scrap$/);
+    expect(segments[0].endMs).toBe(3900);
   });
 
-  it('aceita opções customizadas', () => {
-    const cues = [cue(0, 2, 'uma duas três'), cue(2, 4, 'quatro cinco seis')];
+  it('accepts custom options', () => {
+    const cues = [cue(0, 2, 'one two three'), cue(2, 4, 'four five six')];
     expect(segment(cues, { maxWords: 3 })).toHaveLength(2);
   });
 });
 
-describe('segment — dedupe do rolling text do ASR', () => {
-  it('descarta o cue-fantasma que só repete o anterior', () => {
-    const s = segment([
+describe('segment — ASR rolling-text dedupe', () => {
+  it('drops the ghost cue that only repeats the previous one', () => {
+    const segments = segment([
       cue(0, 2.9, 'all right so here we are'),
       cue(2.909, 2.919, 'all right so here we are'),
       cue(2.919, 5.66, 'all right so here we are in front of the elephants'),
     ]);
-    expect(s.map((x) => x.referenceText)).toEqual([
+    expect(segments.map((s) => s.referenceText)).toEqual([
       'all right so here we are in front of the elephants',
     ]);
   });
 
-  it('não corta repetição curta de fala real', () => {
-    const s = segment([
+  it('does not cut a short repetition of real speech', () => {
+    const segments = segment([
       cue(0, 2.9, 'is that they have really...'),
       cue(2.9, 5.5, 'really really long trunks'),
     ]);
-    expect(s[0].referenceText).toBe('is that they have really... really really long trunks');
+    expect(segments[0].referenceText).toBe(
+      'is that they have really... really really long trunks',
+    );
   });
 });
 
-describe('segment — fixtures reais', () => {
-  it.each(['manual.en.vtt', 'manual.srt', 'asr.en.vtt'])('%s satisfaz os limites', (nome) => {
-    const segmentos = segment(fixture(nome));
+describe('segment — real fixtures', () => {
+  it.each(['manual.en.vtt', 'manual.srt', 'asr.en.vtt'])('%s satisfies the limits', (name) => {
+    const segments = segment(fixture(name));
 
-    expect(segmentos.length).toBeGreaterThan(0);
-    for (const s of segmentos) {
-      expect(contarPalavras(s.referenceText), `palavras em "${s.referenceText}"`).toBeLessThanOrEqual(15);
-      expect(s.endMs - s.startMs, `duração de "${s.referenceText}"`).toBeGreaterThanOrEqual(1500);
+    expect(segments.length).toBeGreaterThan(0);
+    for (const s of segments) {
+      expect(countWords(s.referenceText), `words in "${s.referenceText}"`).toBeLessThanOrEqual(15);
+      expect(s.endMs - s.startMs, `duration of "${s.referenceText}"`).toBeGreaterThanOrEqual(1500);
       expect(s.referenceText).not.toMatch(/\[|\]|♪|>>/);
       expect(s.endMs).toBeGreaterThan(s.startMs);
     }
 
-    // Sem buracos nem sobreposição: os segmentos avançam no tempo.
-    for (let i = 1; i < segmentos.length; i++) {
-      expect(segmentos[i].startMs).toBeGreaterThanOrEqual(segmentos[i - 1].endMs);
+    // No gaps backwards and no overlap: segments move forward in time.
+    for (let i = 1; i < segments.length; i++) {
+      expect(segments[i].startMs).toBeGreaterThanOrEqual(segments[i - 1].endMs);
     }
   });
 
-  it('o rolling text do ASR não aparece duplicado', () => {
-    const texto = segment(fixture('asr.en.vtt'))
+  it('the ASR rolling text does not show up twice', () => {
+    const text = segment(fixture('asr.en.vtt'))
       .map((s) => s.referenceText)
       .join(' ');
-    const ocorrencias = (texto.match(/in front of the elephants/g) ?? []).length;
-    expect(ocorrencias).toBe(1);
-    expect((texto.match(/all right so here we are/g) ?? []).length).toBe(1);
+    expect((text.match(/in front of the elephants/g) ?? []).length).toBe(1);
+    expect((text.match(/all right so here we are/g) ?? []).length).toBe(1);
   });
 
-  it('[Music] sumiu do ASR', () => {
+  it('[Music] is gone from the ASR track', () => {
     expect(segment(fixture('asr.en.vtt')).some((s) => /music/i.test(s.referenceText))).toBe(false);
   });
 });

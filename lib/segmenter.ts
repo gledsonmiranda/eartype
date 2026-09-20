@@ -1,31 +1,31 @@
 /**
- * RF-03 — transforma cues irregulares em segmentos praticáveis.
+ * RF-03 — turns irregular cues into practiceable segments.
  *
- * A legenda crua vem em pedaços de tamanho arbitrário (às vezes uma palavra
- * solta, às vezes uma frase inteira). O segmentador reagrupa isso em trechos
- * de 3–8s e até ~15 palavras, quebrando de preferência onde a fala pausa.
+ * Raw captions arrive in arbitrary chunks (sometimes a stray word, sometimes a
+ * whole sentence). The segmenter regroups them into 3–8s pieces of up to ~15
+ * words, preferring to break where the speech actually pauses.
  *
- * Sem React, sem DOM, sem rede: entra `Cue[]`, sai `Segment[]`.
+ * No React, no DOM, no network: `Cue[]` in, `Segment[]` out.
  */
 
 import type { Cue, Segment } from '@/types';
 
 export type SegmentOptions = {
-  /** Abaixo disso o segmento é curto demais para praticar. */
+  /** Below this a segment is too short to practise. */
   minMs?: number;
-  /** Alvo mínimo: só a partir daqui vale a pena procurar um ponto de quebra. */
+  /** Target floor: only past this is it worth looking for a break. */
   targetMinMs?: number;
-  /** Teto duro de duração. */
+  /** Hard duration cap. */
   maxMs?: number;
-  /** Teto duro de palavras. */
+  /** Hard word cap. */
   maxWords?: number;
-  /** Silêncio entre cues que conta como pausa natural. */
+  /** Silence between cues that counts as a natural pause. */
   silenceGapMs?: number;
-  /** Remove `[Music]`, `>>`, `NAME:` etc. */
+  /** Strip `[Music]`, `>>`, `NAME:` and friends. */
   stripNonSpeech?: boolean;
 };
 
-const PADRAO: Required<SegmentOptions> = {
+const DEFAULTS: Required<SegmentOptions> = {
   minMs: 1500,
   targetMinMs: 3000,
   maxMs: 8000,
@@ -34,191 +34,194 @@ const PADRAO: Required<SegmentOptions> = {
   stripNonSpeech: true,
 };
 
-// ---------------------------------------------------------------- limpeza
+// ---------------------------------------------------------------- cleanup
 
-/** `[Music]`, `[Applause]`, `[Laughter]`, `[ __ ]`… — convenção do YouTube. */
-const COLCHETES = /\[[^\]]*\]/g;
-/** Um cue inteiro entre parênteses é anotação de som: `(baaaah!!)`. */
-const SO_PARENTESES = /^\([^)]*\)$/;
-/** Marcador de troca de falante. */
-const SETAS = /^>>+\s*/;
-/** Rótulo de falante em caixa alta: `JOHN:`, `NARRATOR:`, `DR. SMITH:`. */
-const ROTULO_DE_FALANTE = /^[A-Z][A-Z0-9 .'’-]{1,24}:\s*/;
-/** Linhas de música: ♪ … ♪ */
-const NOTAS_MUSICAIS = /[♪♫]/g;
+/** `[Music]`, `[Applause]`, `[Laughter]`, `[ __ ]`… — YouTube's convention. */
+const BRACKETS = /\[[^\]]*\]/g;
+/** A whole cue in parentheses is a sound annotation: `(baaaah!!)`. */
+const ONLY_PARENTHESES = /^\([^)]*\)$/;
+/** Speaker-change marker. */
+const CHEVRONS = /^>>+\s*/;
+/** Upper-case speaker label: `JOHN:`, `NARRATOR:`, `DR. SMITH:`. */
+const SPEAKER_LABEL = /^[A-Z][A-Z0-9 .'’-]{1,24}:\s*/;
+/** Music lines: ♪ … ♪ */
+const MUSIC_NOTES = /[♪♫]/g;
 
 export function stripNonSpeech(text: string): string {
-  let t = text.replace(COLCHETES, ' ');
-  if (NOTAS_MUSICAIS.test(t)) t = t.replace(NOTAS_MUSICAIS, ' ');
-  t = t.replace(SETAS, '');
-  t = t.replace(ROTULO_DE_FALANTE, '');
-  t = t.trim();
-  if (SO_PARENTESES.test(t)) return '';
-  return t.replace(/\s+/g, ' ').trim();
+  let result = text.replace(BRACKETS, ' ');
+  if (MUSIC_NOTES.test(result)) result = result.replace(MUSIC_NOTES, ' ');
+  result = result.replace(CHEVRONS, '');
+  result = result.replace(SPEAKER_LABEL, '');
+  result = result.trim();
+  if (ONLY_PARENTHESES.test(result)) return '';
+  return result.replace(/\s+/g, ' ').trim();
 }
 
-/** Forma comparável de uma palavra — só para detectar repetição, não para o diff. */
-function chave(palavra: string): string {
-  return palavra.toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
+/** Comparable form of a word — only to spot repetition, never for the diff. */
+function key(word: string): string {
+  return word.toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
 }
 
-function palavras(text: string): string[] {
+function words(text: string): string[] {
   return text.split(/\s+/).filter(Boolean);
 }
 
-export function contarPalavras(text: string): number {
-  return palavras(text).length;
+export function countWords(text: string): number {
+  return words(text).length;
 }
 
 /**
- * Remove o *rolling text* da legenda auto-gerada: o YouTube repete a linha
- * anterior no começo do cue seguinte.
+ * Removes the *rolling text* of auto-generated captions: YouTube repeats the
+ * previous line at the start of the next cue.
  *
- * O corte exige uma sobreposição de pelo menos 3 palavras, porque repetição
- * curta é fala de verdade — "have really… really really long trunks" precisa
- * continuar inteira.
+ * The trim needs at least 3 overlapping words, because a short repeat is real
+ * speech — "have really… really really long trunks" must survive intact.
  */
-const MIN_SOBREPOSICAO = 3;
+const MIN_OVERLAP = 3;
 
-function removerRepeticao(anterior: string, atual: string): string {
-  const a = palavras(anterior).map(chave);
-  const b = palavras(atual);
-  const bChaves = b.map(chave);
-  const maximo = Math.min(a.length, b.length);
+function dropRepeatedPrefix(previous: string, current: string): string {
+  const previousKeys = words(previous).map(key);
+  const currentWords = words(current);
+  const currentKeys = currentWords.map(key);
+  const longest = Math.min(previousKeys.length, currentWords.length);
 
-  for (let k = maximo; k >= 1; k--) {
-    const casa = a.slice(a.length - k).every((p, idx) => p === bChaves[idx]);
-    if (!casa) continue;
-    // O cue inteiro já apareceu: é o cue-fantasma de 10ms do ASR.
-    if (k === b.length) return '';
-    if (k >= MIN_SOBREPOSICAO) return b.slice(k).join(' ');
-    return atual;
+  for (let k = longest; k >= 1; k--) {
+    const matches = previousKeys
+      .slice(previousKeys.length - k)
+      .every((word, index) => word === currentKeys[index]);
+    if (!matches) continue;
+    // The whole cue already appeared: it is the ASR's 10ms ghost cue.
+    if (k === currentWords.length) return '';
+    if (k >= MIN_OVERLAP) return currentWords.slice(k).join(' ');
+    return current;
   }
-  return atual;
+
+  return current;
 }
 
-export function limparCues(cues: Cue[], opts: Required<SegmentOptions>): Cue[] {
-  const saida: Cue[] = [];
+export function cleanCues(cues: Cue[], options: Required<SegmentOptions>): Cue[] {
+  const kept: Cue[] = [];
 
   for (const cue of cues) {
-    const texto = opts.stripNonSpeech ? stripNonSpeech(cue.text) : cue.text.trim();
-    if (texto === '') continue;
+    const text = options.stripNonSpeech ? stripNonSpeech(cue.text) : cue.text.trim();
+    if (text === '') continue;
 
-    const anterior = saida[saida.length - 1];
-    const semRepeticao = anterior ? removerRepeticao(anterior.text, texto) : texto;
-    if (semRepeticao === '') continue;
+    const previous = kept[kept.length - 1];
+    const deduped = previous ? dropRepeatedPrefix(previous.text, text) : text;
+    if (deduped === '') continue;
 
-    // O cue-fantasma do ASR encurtou o texto: o tempo real da fala nova começa
-    // onde o cue começa, mas o fim do anterior não deve passar por cima dele.
-    saida.push({ ...cue, text: semRepeticao });
+    kept.push({ ...cue, text: deduped });
   }
 
-  return saida;
+  return kept;
 }
 
-// ------------------------------------------------------------ segmentação
+// ----------------------------------------------------------- segmentation
 
-const PONTUACAO_FINAL = /[.!?]["'”’)\]]*$/;
-const PONTUACAO_FRACA = /[,;:—–-]["'”’)\]]*$/;
+const SENTENCE_END = /[.!?]["'”’)\]]*$/;
+const WEAK_PUNCTUATION = /[,;:—–-]["'”’)\]]*$/;
 
-type EmConstrucao = { cues: Cue[]; startMs: number; endMs: number; texto: string };
+type Pending = { cues: Cue[]; startMs: number; endMs: number; text: string };
 
-function fechar(atual: EmConstrucao, index: number): Segment {
+function close(pending: Pending, index: number): Segment {
   return {
     index,
-    startMs: atual.startMs,
-    endMs: atual.endMs,
-    referenceText: atual.texto,
-    sourceCueIds: atual.cues.map((c) => c.id),
+    startMs: pending.startMs,
+    endMs: pending.endMs,
+    referenceText: pending.text,
+    sourceCueIds: pending.cues.map((cue) => cue.id),
   };
 }
 
-export function segment(cues: Cue[], opts: SegmentOptions = {}): Segment[] {
-  const o = { ...PADRAO, ...opts };
-  const limpos = limparCues(cues, o);
-  if (limpos.length === 0) return [];
+export function segment(cues: Cue[], options: SegmentOptions = {}): Segment[] {
+  const opts = { ...DEFAULTS, ...options };
+  const cleaned = cleanCues(cues, opts);
+  if (cleaned.length === 0) return [];
 
-  const segmentos: Segment[] = [];
-  let atual: EmConstrucao | null = null;
+  const segments: Segment[] = [];
+  let pending: Pending | null = null;
 
-  const emitir = () => {
-    if (!atual) return;
-    segmentos.push(fechar(atual, segmentos.length));
-    atual = null;
+  const emit = () => {
+    if (!pending) return;
+    segments.push(close(pending, segments.length));
+    pending = null;
   };
 
-  for (let i = 0; i < limpos.length; i++) {
-    const cue = limpos[i];
-    const proximo = limpos[i + 1];
+  for (let i = 0; i < cleaned.length; i++) {
+    const cue = cleaned[i];
+    const next = cleaned[i + 1];
 
-    if (atual === null) {
-      atual = { cues: [cue], startMs: cue.startMs, endMs: cue.endMs, texto: cue.text };
+    if (pending === null) {
+      pending = { cues: [cue], startMs: cue.startMs, endMs: cue.endMs, text: cue.text };
     } else {
-      const duracaoCandidata = cue.endMs - atual.startMs;
-      const palavrasCandidatas = contarPalavras(`${atual.texto} ${cue.text}`);
-      const estouraria = palavrasCandidatas > o.maxWords || duracaoCandidata > o.maxMs;
+      const candidateDuration = cue.endMs - pending.startMs;
+      const candidateWords = countWords(`${pending.text} ${cue.text}`);
+      const wouldOverflow = candidateWords > opts.maxWords || candidateDuration > opts.maxMs;
 
-      if (estouraria) {
-        emitir();
-        atual = { cues: [cue], startMs: cue.startMs, endMs: cue.endMs, texto: cue.text };
+      if (wouldOverflow) {
+        emit();
+        pending = { cues: [cue], startMs: cue.startMs, endMs: cue.endMs, text: cue.text };
       } else {
-        atual = {
-          cues: [...atual.cues, cue],
-          startMs: atual.startMs,
+        pending = {
+          cues: [...pending.cues, cue],
+          startMs: pending.startMs,
           endMs: cue.endMs,
-          texto: `${atual.texto} ${cue.text}`,
+          text: `${pending.text} ${cue.text}`,
         };
       }
     }
 
-    const duracao = atual.endMs - atual.startMs;
-    const totalPalavras = contarPalavras(atual.texto);
-    const gap = proximo ? proximo.startMs - atual.endMs : Infinity;
+    const duration = pending.endMs - pending.startMs;
+    const totalWords = countWords(pending.text);
+    const gap = next ? next.startMs - pending.endMs : Infinity;
 
-    // Tetos duros primeiro: acima deles não há escolha.
-    if (totalPalavras >= o.maxWords || duracao >= o.maxMs) {
-      emitir();
+    // Hard caps first: past them there is no choice.
+    if (totalWords >= opts.maxWords || duration >= opts.maxMs) {
+      emit();
       continue;
     }
 
-    if (duracao < o.targetMinMs) continue;
+    if (duration < opts.targetMinMs) continue;
 
-    // Dentro do alvo: procura o melhor lugar para quebrar, na ordem da spec.
-    if (PONTUACAO_FINAL.test(atual.texto)) {
-      emitir();
-    } else if (gap >= o.silenceGapMs) {
-      emitir();
-    } else if (PONTUACAO_FRACA.test(atual.texto) && duracao >= (o.targetMinMs + o.maxMs) / 2) {
-      emitir();
+    // Within target: look for the best break, in the order the spec lists.
+    if (SENTENCE_END.test(pending.text)) {
+      emit();
+    } else if (gap >= opts.silenceGapMs) {
+      emit();
+    } else if (
+      WEAK_PUNCTUATION.test(pending.text) &&
+      duration >= (opts.targetMinMs + opts.maxMs) / 2
+    ) {
+      emit();
     }
   }
 
-  emitir();
-  return juntarSobra(segmentos, o);
+  emit();
+  return mergeTrailingScrap(segments, opts);
 }
 
 /**
- * O último segmento costuma sobrar curto (o que restou da legenda). Trecho de
- * meio segundo não dá para praticar: volta para o anterior, mesmo que o
- * resultado fique um pouco acima do alvo de palavras.
+ * The last segment tends to be whatever was left over. Half a second is not
+ * practiceable, so it goes back into the previous segment even if that pushes
+ * it a little past the word target.
  */
-function juntarSobra(segmentos: Segment[], o: Required<SegmentOptions>): Segment[] {
-  if (segmentos.length < 2) return segmentos;
+function mergeTrailingScrap(segments: Segment[], options: Required<SegmentOptions>): Segment[] {
+  if (segments.length < 2) return segments;
 
-  const ultimo = segmentos[segmentos.length - 1];
-  if (ultimo.endMs - ultimo.startMs >= o.minMs) return segmentos;
+  const last = segments[segments.length - 1];
+  if (last.endMs - last.startMs >= options.minMs) return segments;
 
-  const anterior = segmentos[segmentos.length - 2];
-  const juntos = `${anterior.referenceText} ${ultimo.referenceText}`;
-  if (contarPalavras(juntos) > o.maxWords + 5) return segmentos;
+  const previous = segments[segments.length - 2];
+  const mergedText = `${previous.referenceText} ${last.referenceText}`;
+  if (countWords(mergedText) > options.maxWords + 5) return segments;
 
-  const fundido: Segment = {
-    index: anterior.index,
-    startMs: anterior.startMs,
-    endMs: ultimo.endMs,
-    referenceText: juntos,
-    sourceCueIds: [...anterior.sourceCueIds, ...ultimo.sourceCueIds],
+  const merged: Segment = {
+    index: previous.index,
+    startMs: previous.startMs,
+    endMs: last.endMs,
+    referenceText: mergedText,
+    sourceCueIds: [...previous.sourceCueIds, ...last.sourceCueIds],
   };
 
-  return [...segmentos.slice(0, -2), fundido];
+  return [...segments.slice(0, -2), merged];
 }

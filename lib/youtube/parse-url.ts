@@ -1,19 +1,19 @@
 /**
- * RF-01 — extrai o videoId (e o start opcional) de qualquer forma de entrada
- * que o usuário possa colar: URL completa, youtu.be, embed, shorts ou o ID puro.
+ * RF-01 — extracts the videoId (and an optional start time) from whatever the
+ * user pastes: a full URL, youtu.be, an embed, a short, or the bare ID.
  */
 
 export type ParsedVideo = {
   videoId: string;
-  /** Segundos vindos de `t=` / `start=`, quando presentes. */
+  /** Seconds from `t=` / `start=`, when present. */
   startSec?: number;
 };
 
-/** IDs do YouTube têm exatamente 11 caracteres deste alfabeto. */
+/** YouTube IDs are exactly 11 characters from this alphabet. */
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
-const HOSTS_CURTOS = new Set(['youtu.be']);
-const HOSTS_LONGOS = new Set([
+const SHORT_HOSTS = new Set(['youtu.be']);
+const FULL_HOSTS = new Set([
   'youtube.com',
   'www.youtube.com',
   'm.youtube.com',
@@ -22,77 +22,77 @@ const HOSTS_LONGOS = new Set([
   'www.youtube-nocookie.com',
 ]);
 
-/** Segmentos de caminho que carregam o ID logo depois deles: /embed/ID, /shorts/ID... */
-const PREFIXOS_DE_CAMINHO = new Set(['embed', 'shorts', 'v', 'live', 'e']);
+/** Path segments that carry the ID right after them: /embed/ID, /shorts/ID... */
+const ID_BEARING_PATHS = new Set(['embed', 'shorts', 'v', 'live', 'e']);
 
 /**
  * `t=90`, `t=90s`, `t=1m30s`, `t=1h2m3s`, `start=90`.
- * Retorna `undefined` quando não dá para ler um número de segundos.
+ * Returns `undefined` when no number of seconds can be read.
  */
 export function parseTimeParam(raw: string | null | undefined): number | undefined {
   if (!raw) return undefined;
-  const v = raw.trim().toLowerCase();
-  if (v === '') return undefined;
+  const value = raw.trim().toLowerCase();
+  if (value === '') return undefined;
 
-  // Só dígitos (com `s` opcional no fim): segundos diretos.
-  const simples = /^(\d+)s?$/.exec(v);
-  if (simples) return Number(simples[1]);
+  // Digits only (with an optional trailing `s`): plain seconds.
+  const plain = /^(\d+)s?$/.exec(value);
+  if (plain) return Number(plain[1]);
 
-  const composto = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(v);
-  if (composto && (composto[1] || composto[2] || composto[3])) {
-    const h = Number(composto[1] ?? 0);
-    const m = Number(composto[2] ?? 0);
-    const s = Number(composto[3] ?? 0);
-    return h * 3600 + m * 60 + s;
+  const compound = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value);
+  if (compound && (compound[1] || compound[2] || compound[3])) {
+    const hours = Number(compound[1] ?? 0);
+    const minutes = Number(compound[2] ?? 0);
+    const seconds = Number(compound[3] ?? 0);
+    return hours * 3600 + minutes * 60 + seconds;
   }
 
   return undefined;
 }
 
-function comStart(videoId: string, start: number | undefined): ParsedVideo {
-  return start === undefined ? { videoId } : { videoId, startSec: start };
+function withStart(videoId: string, startSec: number | undefined): ParsedVideo {
+  return startSec === undefined ? { videoId } : { videoId, startSec };
 }
 
-/** Lê `t` ou `start` de uma query string, nessa ordem de preferência. */
-function lerStart(params: URLSearchParams): number | undefined {
+/** Reads `t` or `start` from a query string, in that order of preference. */
+function readStart(params: URLSearchParams): number | undefined {
   return parseTimeParam(params.get('t')) ?? parseTimeParam(params.get('start'));
 }
 
 export function parseYouTubeUrl(input: string): ParsedVideo | null {
-  const texto = input?.trim();
-  if (!texto) return null;
+  const text = input?.trim();
+  if (!text) return null;
 
-  // Caso mais simples: o ID puro, colado sozinho.
-  if (VIDEO_ID.test(texto)) return { videoId: texto };
+  // Simplest case: the bare ID, pasted on its own.
+  if (VIDEO_ID.test(text)) return { videoId: text };
 
-  // `youtube.com/watch?v=...` sem protocolo ainda é uma URL válida para o usuário.
-  const comProtocolo = /^[a-z][a-z0-9+.-]*:\/\//i.test(texto) ? texto : `https://${texto}`;
+  // `youtube.com/watch?v=...` without a scheme is still a valid URL to a user.
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`;
 
   let url: URL;
   try {
-    url = new URL(comProtocolo);
+    url = new URL(withScheme);
   } catch {
     return null;
   }
 
   const host = url.hostname.toLowerCase();
-  const partes = url.pathname.split('/').filter(Boolean);
-  const start = lerStart(url.searchParams);
+  const pathParts = url.pathname.split('/').filter(Boolean);
+  const startSec = readStart(url.searchParams);
 
-  if (HOSTS_CURTOS.has(host)) {
-    const id = partes[0];
-    return id && VIDEO_ID.test(id) ? comStart(id, start) : null;
+  if (SHORT_HOSTS.has(host)) {
+    const id = pathParts[0];
+    return id && VIDEO_ID.test(id) ? withStart(id, startSec) : null;
   }
 
-  if (!HOSTS_LONGOS.has(host)) return null;
+  if (!FULL_HOSTS.has(host)) return null;
 
-  // /watch?v=ID — a lista de reprodução e o índice são ignorados de propósito.
-  const doQuery = url.searchParams.get('v');
-  if (doQuery && VIDEO_ID.test(doQuery)) return comStart(doQuery, start);
+  // /watch?v=ID — the playlist and index are ignored on purpose.
+  const fromQuery = url.searchParams.get('v');
+  if (fromQuery && VIDEO_ID.test(fromQuery)) return withStart(fromQuery, startSec);
 
-  if (partes.length >= 2 && PREFIXOS_DE_CAMINHO.has(partes[0].toLowerCase())) {
-    const id = partes[1];
-    if (VIDEO_ID.test(id)) return comStart(id, start);
+  if (pathParts.length >= 2 && ID_BEARING_PATHS.has(pathParts[0].toLowerCase())) {
+    const id = pathParts[1];
+    if (VIDEO_ID.test(id)) return withStart(id, startSec);
   }
 
   return null;

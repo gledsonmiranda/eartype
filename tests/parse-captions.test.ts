@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { CaptionParseError, parseCaptions, stripInlineTags } from '@/lib/captions/parse-captions';
 
-const fixture = (nome: string) =>
-  readFileSync(fileURLToPath(new URL(`./fixtures/${nome}`, import.meta.url)), 'utf8');
+const fixture = (name: string) =>
+  readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), 'utf8');
 
 describe('parseCaptions — SRT', () => {
   const srt = `1
@@ -16,11 +16,11 @@ All right, so here we are
 in front of the elephants
 `;
 
-  it('detecta o formato', () => {
+  it('detects the format', () => {
     expect(parseCaptions(srt).format).toBe('srt');
   });
 
-  it('lê timestamps com vírgula', () => {
+  it('reads comma timestamps', () => {
     const { cues } = parseCaptions(srt);
     expect(cues[0]).toEqual({
       id: 'c0',
@@ -30,36 +30,36 @@ in front of the elephants
     });
   });
 
-  it('junta linhas do mesmo cue num texto só', () => {
-    const { cues } = parseCaptions('1\n00:00:00,000 --> 00:00:02,000\nprimeira linha\nsegunda linha\n');
-    expect(cues[0].text).toBe('primeira linha segunda linha');
+  it('joins the lines of one cue into a single text', () => {
+    const { cues } = parseCaptions('1\n00:00:00,000 --> 00:00:02,000\nfirst line\nsecond line\n');
+    expect(cues[0].text).toBe('first line second line');
   });
 
-  it('aceita CRLF', () => {
+  it('accepts CRLF', () => {
     const { cues } = parseCaptions(srt.replace(/\n/g, '\r\n'));
     expect(cues).toHaveLength(2);
     expect(cues[1].text).toBe('in front of the elephants');
   });
 
-  it('aceita BOM no início', () => {
+  it('accepts a leading BOM', () => {
     expect(parseCaptions(`﻿${srt}`).cues).toHaveLength(2);
   });
 
-  it('aceita arquivo sem quebra de linha no fim', () => {
+  it('accepts a file with no trailing newline', () => {
     expect(parseCaptions(srt.trimEnd()).cues).toHaveLength(2);
   });
 
-  it('aceita blocos separados por várias linhas em branco', () => {
+  it('accepts blocks separated by several blank lines', () => {
     expect(parseCaptions(srt.replace('\n\n2', '\n\n\n\n2')).cues).toHaveLength(2);
   });
 
-  it('numera os cues em sequência a partir de zero', () => {
-    expect(parseCaptions(srt).cues.map((c) => c.id)).toEqual(['c0', 'c1']);
+  it('numbers the cues in order from zero', () => {
+    expect(parseCaptions(srt).cues.map((cue) => cue.id)).toEqual(['c0', 'c1']);
   });
 });
 
 describe('parseCaptions — WebVTT', () => {
-  it('detecta o formato e pula o cabeçalho', () => {
+  it('detects the format and skips the header', () => {
     const { cues, format } = parseCaptions(fixture('manual.en.vtt'));
     expect(format).toBe('vtt');
     expect(cues).toHaveLength(6);
@@ -67,156 +67,163 @@ describe('parseCaptions — WebVTT', () => {
     expect(cues[0].text).toBe('All right, so here we are, in front of the elephants');
   });
 
-  it('lê timestamps com ponto', () => {
+  it('reads dot timestamps', () => {
     const { cues } = parseCaptions('WEBVTT\n\n00:00:12.616 --> 00:00:14.367\nand that’s cool\n');
     expect(cues[0]).toMatchObject({ startMs: 12_616, endMs: 14_367 });
   });
 
-  it('aceita timestamp sem a hora (MM:SS.mmm)', () => {
-    const { cues } = parseCaptions('WEBVTT\n\n01:30.500 --> 01:32.000\nolá\n');
+  it('accepts a timestamp without hours (MM:SS.mmm)', () => {
+    const { cues } = parseCaptions('WEBVTT\n\n01:30.500 --> 01:32.000\nhello\n');
     expect(cues[0].startMs).toBe(90_500);
   });
 
-  it('ignora as configurações de posição depois do timestamp', () => {
+  it('ignores cue settings after the timestamp', () => {
     const { cues } = parseCaptions(
-      'WEBVTT\n\n00:00:01.000 --> 00:00:02.000 align:start position:0%\ntexto\n',
+      'WEBVTT\n\n00:00:01.000 --> 00:00:02.000 align:start position:0%\ntext\n',
     );
-    expect(cues[0].text).toBe('texto');
+    expect(cues[0].text).toBe('text');
   });
 
-  it('ignora blocos NOTE, STYLE e REGION', () => {
+  it('ignores NOTE, STYLE and REGION blocks', () => {
     const vtt = `WEBVTT
 
 NOTE
-esse comentário não é legenda
-e continua aqui
+this comment is not a caption
+and it goes on
 
 STYLE
 ::cue { color: yellow }
 
 REGION
-id:falante width:40%
+id:speaker width:40%
 
 00:00:01.000 --> 00:00:02.000
-texto de verdade
+the real text
 `;
     const { cues } = parseCaptions(vtt);
     expect(cues).toHaveLength(1);
-    expect(cues[0].text).toBe('texto de verdade');
+    expect(cues[0].text).toBe('the real text');
   });
 
-  it('aceita identificador textual antes do timestamp', () => {
-    const { cues } = parseCaptions('WEBVTT\n\nintro\n00:00:01.000 --> 00:00:02.000\ntexto\n');
-    expect(cues[0].text).toBe('texto');
+  it('accepts a textual identifier before the timestamp', () => {
+    const { cues } = parseCaptions('WEBVTT\n\nintro\n00:00:01.000 --> 00:00:02.000\ntext\n');
+    expect(cues[0].text).toBe('text');
   });
 
-  it('descarta cues que só tinham marcação', () => {
+  it('drops cues that held nothing but markup', () => {
     const { cues } = parseCaptions(
-      'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n \n\n00:00:03.000 --> 00:00:04.000\ntexto\n',
+      'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\n \n\n00:00:03.000 --> 00:00:04.000\ntext\n',
     );
     expect(cues).toHaveLength(1);
   });
 
-  it('ordena os cues por tempo de início', () => {
+  it('sorts cues by start time', () => {
     const { cues } = parseCaptions(
-      'WEBVTT\n\n00:00:05.000 --> 00:00:06.000\nsegundo\n\n00:00:01.000 --> 00:00:02.000\nprimeiro\n',
+      'WEBVTT\n\n00:00:05.000 --> 00:00:06.000\nsecond\n\n00:00:01.000 --> 00:00:02.000\nfirst\n',
     );
-    expect(cues.map((c) => c.text)).toEqual(['primeiro', 'segundo']);
+    expect(cues.map((cue) => cue.text)).toEqual(['first', 'second']);
   });
 
-  it('lê a fixture ASR inteira sem engasgar', () => {
+  it('reads the whole ASR fixture without choking', () => {
     const { cues } = parseCaptions(fixture('asr.en.vtt'));
     expect(cues.length).toBeGreaterThan(5);
-    expect(cues.every((c) => !c.text.includes('<'))).toBe(true);
+    expect(cues.every((cue) => !cue.text.includes('<'))).toBe(true);
   });
 });
 
 describe('stripInlineTags', () => {
   it.each([
     ['<i>All right</i>, so here we are', 'All right, so here we are'],
-    ['<c.colorE5E5E5>texto</c>', 'texto'],
-    ['<v Roger Bingham>texto', 'texto'],
+    ['<c.colorE5E5E5>text</c>', 'text'],
+    ['<v Roger Bingham>text', 'text'],
     ['all<00:00:00.539> right<00:00:00.960> so', 'all right so'],
     ['and that&#39;s cool', "and that's cool"],
     ['a &amp; b', 'a & b'],
-    ['&lt;não é tag&gt;', '<não é tag>'],
-    ['espaços     demais', 'espaços demais'],
-  ])('%s → %s', (entrada, esperado) => {
-    expect(stripInlineTags(entrada)).toBe(esperado);
+    ['&lt;not a tag&gt;', '<not a tag>'],
+    ['too     many spaces', 'too many spaces'],
+  ])('%s → %s', (input, expected) => {
+    expect(stripInlineTags(input)).toBe(expected);
   });
 
-  it('roda no parser: a fixture SRT sai sem tags nem entidades', () => {
+  it('runs inside the parser: the SRT fixture comes out clean', () => {
     const { cues } = parseCaptions(fixture('manual.srt'));
     expect(cues[0].text).toBe('All right, so here we are, in front of the elephants');
     expect(cues[3].text).toBe("and that's cool");
   });
 });
 
-describe('parseCaptions — entrada inválida dá erro legível', () => {
-  it('vazio', () => {
+describe('parseCaptions — invalid input gives a readable error', () => {
+  it('empty', () => {
     expect(() => parseCaptions('')).toThrow(CaptionParseError);
     expect(() => parseCaptions('   ')).toThrow(/vazia/);
   });
 
-  it('texto que não é legenda', () => {
-    expect(() => parseCaptions('só um texto qualquer\nsem timestamp nenhum')).toThrow(
-      /timestamp/,
-    );
+  it('text that is not a caption', () => {
+    expect(() => parseCaptions('just some text\nwith no timestamps')).toThrow(/timestamp/);
   });
 
-  it('timestamp malformado aponta a linha', () => {
+  it('a malformed timestamp points at the line', () => {
     try {
-      parseCaptions('1\n00:00:01 --> 00:00:03\ntexto\n');
-      expect.unreachable('deveria ter lançado');
-    } catch (erro) {
-      expect(erro).toBeInstanceOf(CaptionParseError);
-      expect((erro as CaptionParseError).line).toBe(2);
-      expect((erro as Error).message).toMatch(/timestamp inválido/);
+      parseCaptions('1\n00:00:01 --> 00:00:03\ntext\n');
+      expect.unreachable('should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(CaptionParseError);
+      expect((error as CaptionParseError).line).toBe(2);
+      expect((error as Error).message).toMatch(/timestamp inválido/);
     }
   });
 
-  it('segundos fora da faixa', () => {
-    expect(() => parseCaptions('1\n00:00:99,000 --> 00:00:03,000\ntexto\n')).toThrow(/faixa/);
+  it('seconds out of range', () => {
+    expect(() => parseCaptions('1\n00:00:99,000 --> 00:00:03,000\ntext\n')).toThrow(/faixa/);
   });
 
-  it('bloco sem linha de tempo', () => {
-    expect(() => parseCaptions('1\ntexto sem tempo\n\n2\n00:00:01,000 --> 00:00:02,000\nok\n')).toThrow(
-      CaptionParseError,
-    );
+  it('a block with no timing line', () => {
+    expect(() =>
+      parseCaptions('1\ntext with no timing\n\n2\n00:00:01,000 --> 00:00:02,000\nok\n'),
+    ).toThrow(CaptionParseError);
   });
 
-  it('VTT só com cabeçalho', () => {
+  it('VTT with only a header', () => {
     expect(() => parseCaptions('WEBVTT\nKind: captions\n')).toThrow(/nenhuma legenda/);
   });
 
-  it('nunca estoura com TypeError em entrada não-string', () => {
-    // @ts-expect-error — entrada vinda da UI pode ser qualquer coisa.
+  it('never blows up with a TypeError on non-string input', () => {
+    // @ts-expect-error — input coming from the UI can be anything.
     expect(() => parseCaptions(null)).toThrow(CaptionParseError);
   });
 });
 
-describe('parseCaptions — armadilha do ASR do YouTube', () => {
-  it('linha só com espaço dentro do cue não encerra o bloco', () => {
-    const vtt = `WEBVTT
+describe('parseCaptions — the YouTube ASR trap', () => {
+  // The space-only lines below are the whole point of these tests, so they are
+  // spelled out with escapes instead of being typed into a template literal —
+  // any editor or formatter would strip trailing whitespace away.
+  it('a line holding a single space inside the cue does not end the block', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:00.030 --> 00:00:02.909 align:start position:0%',
+      ' ',
+      'all<00:00:00.539> right<00:00:00.960> so',
+      '',
+    ].join('\n');
 
-00:00:00.030 --> 00:00:02.909 align:start position:0%
- 
-all<00:00:00.539> right<00:00:00.960> so
-`;
     const { cues } = parseCaptions(vtt);
     expect(cues).toHaveLength(1);
     expect(cues[0].text).toBe('all right so');
   });
 
-  it('mas whitespace seguido de um novo cue encerra', () => {
-    const vtt = `WEBVTT
+  it('but whitespace followed by a new cue does end it', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:01.000 --> 00:00:02.000',
+      'first',
+      '   ',
+      '00:00:03.000 --> 00:00:04.000',
+      'second',
+      '',
+    ].join('\n');
 
-00:00:01.000 --> 00:00:02.000
-primeiro
-   
-00:00:03.000 --> 00:00:04.000
-segundo
-`;
-    expect(parseCaptions(vtt).cues.map((c) => c.text)).toEqual(['primeiro', 'segundo']);
+    expect(parseCaptions(vtt).cues.map((cue) => cue.text)).toEqual(['first', 'second']);
   });
 });

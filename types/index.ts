@@ -1,11 +1,11 @@
 /**
- * Contratos centrais do domínio (PLAN.md §Contratos).
+ * Core domain contracts (PLAN.md §Contratos).
  *
- * Regra: `segmenter`, `normalize` e `diff` não conhecem React, YouTube ou DOM.
- * Recebem dados, devolvem dados.
+ * Rule: `segmenter`, `normalize` and `diff` know nothing about React, YouTube
+ * or the DOM. Data in, data out.
  */
 
-/** Uma linha de legenda, como veio da fonte (yt-dlp, SRT/VTT colado). */
+/** One caption line, as it came from the source (yt-dlp, pasted SRT/VTT). */
 export type Cue = {
   id: string;
   startMs: number;
@@ -13,29 +13,29 @@ export type Cue = {
   text: string;
 };
 
-/** Um trecho praticável: o que o player toca e o que você tem que digitar. */
+/** A practiceable chunk: what the player plays and what you have to type. */
 export type Segment = {
   index: number;
   startMs: number;
   endMs: number;
   referenceText: string;
-  /** Cues que deram origem ao segmento — só para diagnóstico. */
+  /** Cues this segment was built from — for diagnostics only. */
   sourceCueIds: string[];
 };
 
 export type TokenStatus = 'correct' | 'typo' | 'wrong' | 'missing' | 'extra';
 
 export type DiffToken = {
-  /** O que aparece na tela para este token. */
+  /** What to render on screen for this token. */
   text: string;
   status: TokenStatus;
-  /** Preenchido quando `status` é 'typo' ou 'wrong': a palavra da referência. */
+  /** Set when `status` is 'typo' or 'wrong': the reference word. */
   expected?: string;
 };
 
 export type DiffResult = {
   tokens: DiffToken[];
-  /** 0..1 — tokens corretos (typo vale 0,5) sobre tokens da referência. */
+  /** 0..1 — correct tokens (a typo counts as 0.5) over reference tokens. */
   accuracy: number;
 };
 

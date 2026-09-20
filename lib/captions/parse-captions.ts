@@ -1,17 +1,20 @@
 /**
- * RF-02b — parser de SRT e WebVTT, com detecção automática de formato.
+ * RF-02b — SRT and WebVTT parser, with automatic format detection.
  *
- * Aceita o que se encontra na prática: CRLF, BOM, `,` ou `.` no separador de
- * milissegundos, blocos `NOTE`/`STYLE`/`REGION`, tags inline (`<i>`, `<c.x>`,
- * `<00:00:01.000>`) e as configurações de posição do WebVTT depois do timestamp.
+ * Accepts what you actually run into: CRLF, a BOM, `,` or `.` as the
+ * millisecond separator, `NOTE`/`STYLE`/`REGION` blocks, inline tags (`<i>`,
+ * `<c.x>`, `<00:00:01.000>`) and WebVTT cue settings after the timestamp.
  *
- * Não conhece rede nem DOM: entra texto, sai `Cue[]`.
+ * Knows nothing about the network or the DOM: text in, `Cue[]` out.
+ *
+ * User-facing error messages stay in Portuguese — they are shown as-is in the
+ * UI, and SPEC.md writes them that way.
  */
 
 import type { CaptionFormat, Cue } from '@/types';
 
 export class CaptionParseError extends Error {
-  /** 1-based, quando dá para apontar a linha; `undefined` se o problema é o arquivo todo. */
+  /** 1-based, when a line can be pointed at; `undefined` when the whole file is the problem. */
   readonly line?: number;
 
   constructor(message: string, line?: number) {
@@ -26,154 +29,154 @@ export type ParsedCaptions = {
   format: CaptionFormat;
 };
 
-/** `HH:MM:SS,mmm` (SRT) ou `HH:MM:SS.mmm` / `MM:SS.mmm` (VTT). */
+/** `HH:MM:SS,mmm` (SRT) or `HH:MM:SS.mmm` / `MM:SS.mmm` (VTT). */
 const TIMESTAMP = /^(?:(\d+):)?(\d{1,3}):(\d{1,2})[.,](\d{1,3})$/;
 
-const LINHA_DE_TEMPO = /^(\S+)\s*-->\s*(\S+)(?:\s+(.*))?$/;
+const CUE_TIMING_LINE = /^(\S+)\s*-->\s*(\S+)(?:\s+(.*))?$/;
 
-function parseTimestamp(raw: string, linha: number): number {
-  const m = TIMESTAMP.exec(raw.trim());
-  if (!m) throw new CaptionParseError(`timestamp inválido: "${raw}"`, linha);
+function parseTimestamp(raw: string, line: number): number {
+  const match = TIMESTAMP.exec(raw.trim());
+  if (!match) throw new CaptionParseError(`timestamp inválido: "${raw}"`, line);
 
-  const [, h, mm, ss, ms] = m;
-  const segundos = Number(ss);
-  const minutos = Number(mm);
-  if (segundos > 59) throw new CaptionParseError(`segundos fora da faixa: "${raw}"`, linha);
-  // Em `MM:SS.mmm` (sem hora) os minutos podem passar de 59; em `HH:MM:SS` não.
-  if (h !== undefined && minutos > 59) {
-    throw new CaptionParseError(`minutos fora da faixa: "${raw}"`, linha);
+  const [, hours, minutes, seconds, millis] = match;
+  const secondsValue = Number(seconds);
+  const minutesValue = Number(minutes);
+  if (secondsValue > 59) throw new CaptionParseError(`segundos fora da faixa: "${raw}"`, line);
+  // In `MM:SS.mmm` (no hour) minutes may exceed 59; in `HH:MM:SS` they may not.
+  if (hours !== undefined && minutesValue > 59) {
+    throw new CaptionParseError(`minutos fora da faixa: "${raw}"`, line);
   }
 
   return (
-    Number(h ?? 0) * 3_600_000 +
-    minutos * 60_000 +
-    segundos * 1000 +
-    Number(ms.padEnd(3, '0'))
+    Number(hours ?? 0) * 3_600_000 +
+    minutesValue * 60_000 +
+    secondsValue * 1000 +
+    Number(millis.padEnd(3, '0'))
   );
 }
 
-/** Remove o que é marcação e não texto falado. */
+/** Strips what is markup rather than spoken text. */
 export function stripInlineTags(text: string): string {
-  return text
-    // Timestamps inline do karaokê do ASR: <00:00:01.000>
-    .replace(/<\d{1,3}:\d{2}:\d{2}[.,]\d{1,3}>/g, '')
-    // Tags de estilo/voz: <i>, </i>, <c.colorE5E5E5>, <v Speaker>
-    .replace(/<\/?[a-zA-Z][^>]*>/g, '')
-    // Entidades que o WebVTT escapa.
-    .replace(/&lrm;|&rlm;/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/[ \t]+/g, ' ')
-    .trim();
+  return (
+    text
+      // Karaoke timestamps the ASR track inlines: <00:00:01.000>
+      .replace(/<\d{1,3}:\d{2}:\d{2}[.,]\d{1,3}>/g, '')
+      // Styling and voice tags: <i>, </i>, <c.colorE5E5E5>, <v Speaker>
+      .replace(/<\/?[a-zA-Z][^>]*>/g, '')
+      // Entities WebVTT escapes.
+      .replace(/&lrm;|&rlm;/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/[ \t]+/g, ' ')
+      .trim()
+  );
 }
 
-function detectarFormato(texto: string): CaptionFormat {
-  return /^﻿?WEBVTT/.test(texto) ? 'vtt' : 'srt';
-}
-
-/**
- * Um bloco do WebVTT cujo primeiro token é `NOTE`, `STYLE` ou `REGION` não é
- * um cue — é metadado, e tudo nele deve ser ignorado.
- */
-const BLOCOS_IGNORADOS = /^(NOTE|STYLE|REGION)\b/;
-
-/** O bloco começa com a linha de tempo, ou com um índice numérico antes dela. */
-function iniciaBloco(linhas: string[], i: number): boolean {
-  const linha = linhas[i];
-  if (linha === undefined) return false;
-  if (linha.includes('-->')) return true;
-  return /^\d+$/.test(linha.trim()) && (linhas[i + 1]?.includes('-->') ?? false);
+function detectFormat(text: string): CaptionFormat {
+  return /^﻿?WEBVTT/.test(text) ? 'vtt' : 'srt';
 }
 
 /**
- * Separador de blocos. A legenda auto-gerada do YouTube põe uma linha contendo
- * só um espaço *dentro* do cue (o lugar do rolling text), então whitespace
- * sozinho só encerra o bloco quando o que vem depois é de fato um novo cue.
+ * A WebVTT block starting with `NOTE`, `STYLE` or `REGION` is not a cue — it
+ * is metadata, and everything in it must be ignored.
  */
-function ehSeparador(linhas: string[], i: number): boolean {
-  const linha = linhas[i];
-  if (linha === undefined) return true;
-  if (linha === '') return true;
-  return linha.trim() === '' && iniciaBloco(linhas, i + 1);
+const IGNORED_BLOCKS = /^(NOTE|STYLE|REGION)\b/;
+
+/** A block starts at the timing line, or at a numeric index just before it. */
+function startsBlock(lines: string[], i: number): boolean {
+  const line = lines[i];
+  if (line === undefined) return false;
+  if (line.includes('-->')) return true;
+  return /^\d+$/.test(line.trim()) && (lines[i + 1]?.includes('-->') ?? false);
+}
+
+/**
+ * Block separator. YouTube's auto-generated captions put a line containing a
+ * single space *inside* the cue (where the rolling text goes), so whitespace
+ * alone only ends a block when what follows is really a new cue.
+ */
+function isSeparator(lines: string[], i: number): boolean {
+  const line = lines[i];
+  if (line === undefined) return true;
+  if (line === '') return true;
+  return line.trim() === '' && startsBlock(lines, i + 1);
 }
 
 export function parseCaptions(raw: string): ParsedCaptions {
   if (typeof raw !== 'string' || raw.trim() === '') {
-    throw new CaptionParseError('a legenda está vazia — cole o conteúdo de um arquivo .srt ou .vtt');
+    throw new CaptionParseError(
+      'a legenda está vazia — cole o conteúdo de um arquivo .srt ou .vtt',
+    );
   }
 
-  const texto = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
-  const format = detectarFormato(texto);
-  const linhas = texto.split('\n');
+  const text = raw.replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+  const format = detectFormat(text);
+  const lines = text.split('\n');
 
   const cues: Cue[] = [];
   let i = 0;
-  // O cabeçalho do VTT (`WEBVTT ...` + metadados) vai até a primeira linha em branco.
+  // The VTT header (`WEBVTT ...` plus metadata) runs until the first blank line.
   if (format === 'vtt') {
-    while (i < linhas.length && !ehSeparador(linhas, i)) i++;
+    while (i < lines.length && !isSeparator(lines, i)) i++;
   }
 
-  while (i < linhas.length) {
-    // Pula linhas em branco entre blocos.
-    if (linhas[i].trim() === '') {
+  while (i < lines.length) {
+    // Skip blank lines between blocks.
+    if (lines[i].trim() === '') {
       i++;
       continue;
     }
 
-    const inicioDoBloco = i;
+    const blockStart = i;
 
-    if (format === 'vtt' && BLOCOS_IGNORADOS.test(linhas[i].trim())) {
-      while (i < linhas.length && !ehSeparador(linhas, i)) i++;
+    if (format === 'vtt' && IGNORED_BLOCKS.test(lines[i].trim())) {
+      while (i < lines.length && !isSeparator(lines, i)) i++;
       continue;
     }
 
-    // Índice numérico opcional (obrigatório no SRT, raro no VTT).
-    if (/^\d+$/.test(linhas[i].trim()) && linhas[i + 1] !== undefined) {
+    // Optional numeric index (required in SRT, rare in VTT).
+    if (/^\d+$/.test(lines[i].trim()) && lines[i + 1] !== undefined) {
       i++;
-    } else if (
-      format === 'vtt' &&
-      !linhas[i].includes('-->') &&
-      linhas[i + 1]?.includes('-->')
-    ) {
-      // Identificador textual do cue no VTT.
+    } else if (format === 'vtt' && !lines[i].includes('-->') && lines[i + 1]?.includes('-->')) {
+      // Textual cue identifier in VTT.
       i++;
     }
 
-    const linhaDeTempo = linhas[i];
-    if (linhaDeTempo === undefined || !linhaDeTempo.includes('-->')) {
+    const timingLine = lines[i];
+    if (timingLine === undefined || !timingLine.includes('-->')) {
       throw new CaptionParseError(
-        `esperava um timestamp (00:00:00${format === 'srt' ? ',' : '.'}000 --> ...), encontrei "${(linhas[inicioDoBloco] ?? '').trim()}"`,
-        inicioDoBloco + 1,
+        `esperava um timestamp (00:00:00${format === 'srt' ? ',' : '.'}000 --> ...), encontrei "${(lines[blockStart] ?? '').trim()}"`,
+        blockStart + 1,
       );
     }
 
-    const m = LINHA_DE_TEMPO.exec(linhaDeTempo.trim());
-    if (!m) {
-      throw new CaptionParseError(`linha de tempo malformada: "${linhaDeTempo.trim()}"`, i + 1);
+    const timing = CUE_TIMING_LINE.exec(timingLine.trim());
+    if (!timing) {
+      throw new CaptionParseError(`linha de tempo malformada: "${timingLine.trim()}"`, i + 1);
     }
 
-    const startMs = parseTimestamp(m[1], i + 1);
-    const endMs = parseTimestamp(m[2], i + 1);
+    const startMs = parseTimestamp(timing[1], i + 1);
+    const endMs = parseTimestamp(timing[2], i + 1);
     i++;
 
-    const corpo: string[] = [];
-    while (i < linhas.length && !ehSeparador(linhas, i)) {
-      corpo.push(linhas[i]);
+    const body: string[] = [];
+    while (i < lines.length && !isSeparator(lines, i)) {
+      body.push(lines[i]);
       i++;
     }
 
-    const text = stripInlineTags(corpo.join('\n')).replace(/\n+/g, ' ').trim();
-    if (text === '') continue; // cue vazio: posicionamento ou artefato; não é erro.
+    const cueText = stripInlineTags(body.join('\n')).replace(/\n+/g, ' ').trim();
+    if (cueText === '') continue; // Empty cue: positioning or an artifact, not an error.
 
     cues.push({
       id: `c${cues.length}`,
       startMs,
       endMs: Math.max(endMs, startMs),
-      text,
+      text: cueText,
     });
   }
 
@@ -184,5 +187,5 @@ export function parseCaptions(raw: string): ParsedCaptions {
   }
 
   cues.sort((a, b) => a.startMs - b.startMs);
-  return { cues: cues.map((c, index) => ({ ...c, id: `c${index}` })), format };
+  return { cues: cues.map((cue, index) => ({ ...cue, id: `c${index}` })), format };
 }
