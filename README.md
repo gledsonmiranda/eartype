@@ -26,8 +26,30 @@ pipx install yt-dlp     # ou: pip install -U yt-dlp
 yt-dlp -U               # ocasionalmente, quando o YouTube mudar
 ```
 
+Se o binário não estiver no `PATH` (por exemplo, instalado num venv), aponte o
+caminho:
+
+```bash
+YT_DLP_PATH=/caminho/para/yt-dlp.exe npm run dev
+```
+
+O `yt-dlp` precisa de um **runtime JavaScript** para extrair sem cair num caminho
+deprecado; o app passa `--js-runtimes node`, e o Node você já tem. Versões antigas
+que não conhecem a opção funcionam do mesmo jeito (o app repete a chamada sem ela).
+
 Sem `yt-dlp` o app continua utilizável: dá para **colar a legenda SRT/VTT à mão**
 (RF-02b), que é um caminho de primeira classe na tela de entrada.
+
+### Cache da legenda
+
+Cada busca custa ~3s e conta contra o rate limit do YouTube, então a legenda é
+guardada em memória e em `.cache/transcripts/` (fora do git), por 30 dias.
+`TRANSCRIPT_CACHE=off` desliga o cache em disco; `?force=1` na rota refaz a busca.
+
+> Se o YouTube responder **`Sign in to confirm you're not a bot`**, o IP levou um
+> bloqueio temporário por excesso de requisições. Não há o que consertar: espere
+> alguns minutos, ou cole a legenda à mão. O app trata isso como um erro próprio
+> (`rate-limited`), distinto de "vídeo sem legenda".
 
 ## Estrutura
 

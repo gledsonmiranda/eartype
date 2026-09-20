@@ -90,15 +90,20 @@ yt-dlp --skip-download --write-sub --write-auto-sub --sub-lang en --sub-format v
 ```
 Restrições **não negociáveis**, todas medidas no spike:
 - `--sub-lang en` e nunca um glob — `en.*` toma 429 na terceira faixa e derruba a chamada inteira.
-- `export const runtime = 'nodejs'` na rota (Edge não tem `child_process`).
+- ~~`export const runtime = 'nodejs'` na rota~~ — **caiu**: nesta versão do Next `nodejs` já é o padrão e o runtime Edge está deprecado; a própria doc manda remover o export (`node_modules/next/dist/docs/.../runtime.md`). A rota continua precisando do Node, só não precisa mais declarar.
 - Timeout no `execFile` (60s) e limpeza do diretório temporário no `finally`.
 - Cache obrigatório: ~2,3s por busca.
 - Erro do processo traduzido para os tipos de erro da UI — não vazar stderr do yt-dlp para a tela.
 
-**Pronto quando:** devolve cues para os 5 vídeos do spike e dá erro **tipado e distinguível** para: sem legenda em inglês / vídeo indisponível / yt-dlp ausente ou falhando. A UI precisa saber qual dos três aconteceu para escolher a mensagem.
+- **`--js-runtimes node`** (descoberto no S-1c): sem runtime JS o yt-dlp cai num caminho de extração deprecado e perde metadados. Uma versão antiga que não conheça a opção rejeita a chamada, e aí ela é repetida sem a flag.
+
+**Pronto quando:** devolve cues para os 5 vídeos do spike e dá erro **tipado e distinguível** para: sem legenda em inglês / vídeo indisponível / yt-dlp ausente ou falhando. A UI precisa saber qual aconteceu para escolher a mensagem.
 
 **Pré-requisito documentado no README:** o app depende do `yt-dlp` instalado, e de um `yt-dlp -U` ocasional quando o YouTube mudar.
-**Pronto quando:** devolve cues para os 5 vídeos do spike e dá erro **tipado e distinguível** para: sem legenda em inglês / vídeo indisponível / falha do provedor. A UI precisa saber qual dos três aconteceu para escolher a mensagem.
+
+**Como ficou:** cinco códigos de erro em vez de três, porque o bloqueio temporário por IP (`rate-limited`) pede uma mensagem diferente de "não tem legenda" — some sozinho, e a ação certa é esperar, não colar legenda. Os outros: `no-english-captions`, `video-unavailable`, `tool-missing`, `provider-failed`.
+
+**Verificado ao vivo** (não só nos testes): os cinco vídeos voltam com legenda em 3,0–3,5s, o tipo (manual/ASR) sai certo nos cinco, a segunda busca vem do disco em ~1ms, um ID inexistente dá `video-unavailable` e um binário fora do lugar dá `tool-missing`.
 
 ### T-07 — Player com pausa automática  ·  ✅ validado no S-2
 Wrapper da IFrame API: `seekTo` + `play` + polling + `pause` no fim do segmento, com `cc_load_policy: 0`.

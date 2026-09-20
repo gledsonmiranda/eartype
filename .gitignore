@@ -44,3 +44,6 @@ next-env.d.ts
 spike/node_modules/
 spike/.venv/
 spike/cap/
+
+# cache de legenda no servidor (T-06)
+.cache/
