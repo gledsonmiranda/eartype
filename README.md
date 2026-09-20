@@ -33,6 +33,13 @@ caminho:
 YT_DLP_PATH=/caminho/para/yt-dlp.exe npm run dev
 ```
 
+Para não repetir isso toda vez, ponha a linha num `.env.local` (fora do git) —
+o Next carrega esse arquivo sozinho:
+
+```
+YT_DLP_PATH=C:\caminho\para\yt-dlp.exe
+```
+
 O `yt-dlp` precisa de um **runtime JavaScript** para extrair sem cair num caminho
 deprecado; o app passa `--js-runtimes node`, e o Node você já tem. Versões antigas
 que não conhecem a opção funcionam do mesmo jeito (o app repete a chamada sem ela).
