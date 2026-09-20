@@ -227,3 +227,37 @@ describe('parseCaptions — the YouTube ASR trap', () => {
     expect(parseCaptions(vtt).cues.map((cue) => cue.text)).toEqual(['first', 'second']);
   });
 });
+
+describe('parseCaptions — word-level timings', () => {
+  it('records when the last word of the cue starts', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:55.800 --> 00:01:16.950',
+      'for<00:00:55.960><c> the</c><00:00:56.320><c> rest</c><00:00:56.560><c> of my life.</c>',
+      '',
+    ].join('\n');
+
+    expect(parseCaptions(vtt).cues[0].speechEndMs).toBe(56_560);
+  });
+
+  it('leaves it undefined on a track without inline timings', () => {
+    const vtt = ['WEBVTT', '', '00:00:01.000 --> 00:00:04.000', 'plain caption text', ''].join(
+      '\n',
+    );
+
+    expect(parseCaptions(vtt).cues[0].speechEndMs).toBeUndefined();
+  });
+
+  it('ignores a timing that lands before the cue starts', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      '00:00:10.000 --> 00:00:14.000',
+      'leftover<00:00:02.000><c> timing</c>',
+      '',
+    ].join('\n');
+
+    expect(parseCaptions(vtt).cues[0].speechEndMs).toBeUndefined();
+  });
+});

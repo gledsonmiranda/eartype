@@ -55,6 +55,26 @@ function parseTimestamp(raw: string, line: number): number {
   );
 }
 
+/** The word-level timings the ASR track inlines: `<00:00:01.000>`. */
+const INLINE_TIMESTAMP = /<(\d{1,3}):(\d{2}):(\d{2})[.,](\d{1,3})>/g;
+
+/**
+ * When the last word of the cue starts, or `undefined` on a track without
+ * word-level timings. See `Cue.speechEndMs`.
+ */
+function lastInlineTimestamp(body: string): number | undefined {
+  let last: number | undefined;
+  for (const match of body.matchAll(INLINE_TIMESTAMP)) {
+    const [, hours, minutes, seconds, millis] = match;
+    last =
+      Number(hours) * 3_600_000 +
+      Number(minutes) * 60_000 +
+      Number(seconds) * 1000 +
+      Number(millis.padEnd(3, '0'));
+  }
+  return last;
+}
+
 /** Strips what is markup rather than spoken text. */
 export function stripInlineTags(text: string): string {
   return (
@@ -169,14 +189,18 @@ export function parseCaptions(raw: string): ParsedCaptions {
       i++;
     }
 
-    const cueText = stripInlineTags(body.join('\n')).replace(/\n+/g, ' ').trim();
+    const rawBody = body.join('\n');
+    const cueText = stripInlineTags(rawBody).replace(/\n+/g, ' ').trim();
     if (cueText === '') continue; // Empty cue: positioning or an artifact, not an error.
+
+    const speechEndMs = lastInlineTimestamp(rawBody);
 
     cues.push({
       id: `c${cues.length}`,
       startMs,
       endMs: Math.max(endMs, startMs),
       text: cueText,
+      ...(speechEndMs !== undefined && speechEndMs >= startMs ? { speechEndMs } : {}),
     });
   }
 

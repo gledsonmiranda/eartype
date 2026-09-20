@@ -59,6 +59,19 @@ segment(cues: Cue[], opts?: { minMs?; maxMs?; maxWords? }): Segment[]
 ```
 Regras no §RF-03. **Pronto quando:** rodando sobre as duas fixtures (manual e ASR), nenhum segmento passa de 15 palavras, nenhum fica abaixo de 1,5s, o rolling text do ASR não aparece duplicado, e `[Music]` sumiu.
 
+### T-04b — o segmentador contra legenda real
+Os critérios acima foram escritos contra fixtures feitas a partir da spec, e por isso só continham os problemas que já tínhamos imaginado. As cinco legendas reais do S-1c derrubaram quatro deles (detalhes em `SPIKE-RESULTS.md`): rolling text repetido de 1–2 palavras, segmento de 21s vindo de um cue que fica na tela depois da fala acabar, `>>` sobrevivendo no meio do cue, e segmentos abaixo de 1,5s.
+
+O corpus vira fixture (`tests/fixtures/corpus/`) e os critérios passam a ser **invariantes sobre o vídeo inteiro**, não casos escolhidos a dedo.
+
+**Pronto quando:** nos cinco vídeos, nenhum segmento fica abaixo de 1,5s, nenhum passa de `maxMs + minMs`, nenhum agrupamento passa de `maxWords + 5`, nenhuma fronteira entre segmentos repete 3 palavras ou mais, e não sobra marcação (`[`, `]`, `♪`, `>>`).
+
+**Duas concessões conscientes:**
+- **Um cue nunca é partido** (§RF-03), então um cue de 18 palavras vira um segmento de 18 palavras. O cap de palavras só vale para segmentos que agrupam mais de um cue.
+- **Os limites esticam para não deixar sobra.** Emitir 0,8s de áudio não é praticável, então o segmento estende até `maxWords + 5` em vez de cuspir um caco. Em troca, ~6% dos segmentos do vídeo mais longo ficam entre 16 e 20 palavras.
+
+**Limite conhecido:** quando o ASR *reescreve* a própria transcrição ao redesenhar a linha (`…is important to you.` / `You know this is important to your life…`), a repetição passa. São 8 casos em 1.557 segmentos no vídeo de 1h26; repetição de 1–2 palavras na fronteira também pode ser fala real (`blah, / blah, blah…`), e é por isso que o corte fica em 3 palavras.
+
 ### T-05 — `normalize` + `diff`  ·  **o coração do projeto**
 ```ts
 canonicalize(text: string, mode: 'lenient' | 'strict'): Token[]   // pre-pass de frase, depois tokens

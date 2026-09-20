@@ -26,6 +26,9 @@ describe('stripNonSpeech', () => {
     ['♪ la la la ♪', 'la la la'],
     ['>> and then he said', 'and then he said'],
     ['>>> JOHN: and then he said', 'and then he said'],
+    // A speaker change lands mid-cue too, and `[Music]` leaves a second one behind.
+    ['gotten into her car. >> [music]', 'gotten into her car.'],
+    ['>> [music] >> and night was getting closer.', 'and night was getting closer.'],
     ['NARRATOR: once upon a time', 'once upon a time'],
     ['DR. SMITH: hello', 'hello'],
     ['Well: that is different', 'Well: that is different'],
@@ -171,6 +174,102 @@ describe('segment — ASR rolling-text dedupe', () => {
     expect(segments[0].referenceText).toBe(
       'is that they have really... really really long trunks',
     );
+  });
+
+  it('drops a one-word repeat when it is the whole previous cue, glued in time', () => {
+    // The ASR trims a line down to a single word and then redraws it.
+    const segments = segment([
+      cue(0, 2.3, 'easiest mistake is upgrading the wrong things.'),
+      cue(2.3, 2.31, 'things.'),
+      cue(2.31, 4.2, 'things. You end up spending because you can'),
+    ]);
+    expect(segments.map((s) => s.referenceText)).toEqual([
+      'easiest mistake is upgrading the wrong things. You end up spending because you can',
+    ]);
+  });
+
+  it('strips whatever the ghost cue showed, however short', () => {
+    // "were drunk." is a 2-word repeat: too short for the overlap rule, but it
+    // is exactly what the 10ms ghost cue displayed.
+    const text = segment([
+      cue(0, 1.9, 'performing as badly as the people who were drunk.'),
+      cue(1.9, 1.91, 'were drunk.'),
+      cue(1.91, 4.6, 'were drunk. And the longer they stayed awake, the'),
+    ])
+      .map((s) => s.referenceText)
+      .join(' ');
+    expect(text).toBe(
+      'performing as badly as the people who were drunk. And the longer they stayed awake, the',
+    );
+  });
+
+  it('keeps a repetition when a real pause separates the two cues', () => {
+    const text = segment([
+      cue(0, 2.5, 'Pennsylvania.'),
+      cue(4, 7.5, 'Pennsylvania is where this story starts, in a small town.'),
+    ])
+      .map((s) => s.referenceText)
+      .join(' ');
+    expect(text.match(/Pennsylvania/g)).toHaveLength(2);
+  });
+});
+
+describe('segment — a cue that stays on screen after the speech ends', () => {
+  const speech = (startSec: number, endSec: number, speechEndSec: number, text: string): Cue => ({
+    ...cue(startSec, endSec, text),
+    speechEndMs: speechEndSec * 1000,
+  });
+
+  it('cuts the trailing silence instead of waiting it out', () => {
+    // Real case: the last word starts at 0.76s and the cue lasts until 21s.
+    const segments = segment([speech(0, 21.15, 0.76, 'for the rest of my life.')]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].endMs).toBe(1560);
+  });
+
+  it('leaves a cue whose silence is short alone', () => {
+    const segments = segment([speech(0, 4, 3.2, 'for the rest of my life.')]);
+    expect(segments[0].endMs).toBe(4000);
+  });
+
+  it('does not touch a track without word timings', () => {
+    const segments = segment([cue(0, 21.15, 'for the rest of my life.')]);
+    expect(segments[0].endMs).toBe(21150);
+  });
+});
+
+describe('segment — scraps', () => {
+  it('stretches the caps rather than leave a scrap behind', () => {
+    // Breaking here would emit "an S update." on its own: 0.8s, unpractisable.
+    const segments = segment([
+      cue(0, 0.8, 'an S update.'),
+      cue(0.8, 4.2, 'The iPhone 18 Pro is basically an iPhone 17 Pro with a chip update,'),
+    ]);
+    expect(segments).toHaveLength(1);
+    expect(countWords(segments[0].referenceText)).toBeGreaterThan(15);
+  });
+
+  it('merges a scrap in the middle, not only the last one', () => {
+    const segments = segment([
+      cue(0, 3.4, 'a reasonably long sentence right here.'),
+      cue(3.4, 4.2, 'a scrap.'),
+      cue(6, 9.5, 'and then a whole other sentence over here.'),
+    ]);
+    expect(segments.every((s) => s.endMs - s.startMs >= 1500)).toBe(true);
+    expect(segments.map((s) => s.index)).toEqual([...segments.keys()]);
+  });
+
+  it('keeps a scrap that no neighbour can absorb', () => {
+    // Both neighbours are single cues already past the cap: absorbing the
+    // scrap would make a segment nobody can hold in their head.
+    const long = Array.from({ length: 20 }, (_, i) => `w${i}`).join(' ');
+    const segments = segment([
+      cue(0, 4, `${long}.`),
+      cue(4, 4.5, 'scrap.'),
+      cue(6, 10, `${long}.`),
+    ]);
+    expect(segments).toHaveLength(3);
+    expect(segments[1].referenceText).toBe('scrap.');
   });
 });
 

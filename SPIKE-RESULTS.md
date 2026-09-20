@@ -54,7 +54,48 @@ Pergunta levantada ao decidir a arquitetura: *se o Node está bloqueado, a rota 
 ### Veredito
 A rota automática em Node puro está morta hoje. O `yt-dlp` resolve — inclusive chamado de dentro do Next.js — ao custo de um **binário externo (Python)**. Ver `PLAN.md` §T-06.
 
-**Pendente:** rodar o teste nos 5 vídeos reais previstos no plano (manual, só-ASR, longo, canal pequeno, restrito). O que foi testado até aqui responde *pelo mecanismo*, não pela cobertura.
+### S-1c — cobertura nos 5 vídeos reais  🟢 5/5
+
+Lista em `videos-for-test.md`. Uma faixa `en` por vídeo, `--write-sub --write-auto-sub`:
+
+| # | tipo | videoId | duração | legenda | cues | VTT |
+|---|---|---|---|---|---|---|
+| 1 | manual (MKBHD) | `ohqxP8EEumo` | 18min | **manual** (`en`, +ja/pt/ru/tr/vi) | 431 | 31 KB |
+| 2 | só ASR | `45oG6w7bvtM` | 19min | auto | 776 | 132 KB |
+| 3 | longo | `8dHEG7WxR4c` | **1h26** | auto | 5.334 | 918 KB |
+| 4 | canal pequeno (4 mil views) | `xxdlUHSWM7E` | 14min | auto | 798 | 137 KB |
+| 5 | suspeita de restrição | `Fy291Q3a6zs` | 26min | auto | 1.180 | 187 KB |
+
+Nenhuma restrição apareceu: os cinco baixaram em sequência, sem 429 e sem cookies. O vídeo 3 mostra o teto real de tamanho — **918 KB e 5.334 cues** numa resposta só, o que pesa no cache do T-06.
+
+**Bloqueio novo no meio do caminho:** o YouTube passou a responder `Sign in to confirm you're not a bot` para **todos** os vídeos e **todos** os clientes (`tv`, `android_vr`, `web_embedded`, `mweb`) — bloqueio por IP, provável herança do 429 do dia anterior. Destravou sozinho em poucos minutos, sem nenhuma ação nossa — nenhuma das alternativas testadas (outro cliente, runtime JS, cookies) teve efeito. Duas lições:
+
+1. **`--js-runtimes node` agora é obrigatório.** Sem um runtime JS o yt-dlp cai num caminho deprecado e some com metadados (`No title found in player responses`). O Node já é dependência do projeto, então não custa nada.
+2. **Cookies do navegador não são plano B viável no Windows.** `--cookies-from-browser chrome` falha com `Failed to decrypt with DPAPI` por causa do App-Bound Encryption do Chrome — nem com o navegador fechado funciona. O plano B real continua sendo o RF-02b (colar legenda à mão).
+
+### O que as legendas reais revelaram sobre o segmentador (T-04)
+
+Rodando `parseCaptions` + `segment` sobre os cinco arquivos, quatro defeitos que as fixtures não pegaram:
+
+| defeito | onde | exemplo |
+|---|---|---|
+| **Dedup do rolling text falha com repetição de 1–2 palavras** — `MIN_OVERLAP = 3` deixa passar | todos os ASR | `…upgrading the wrong things.` / `things. You end up spending` |
+| **Segmento estoura o `maxMs` de 8s** — um cue único longo nunca é dividido | #5 | um segmento de **21,1s**: `"for the rest of my life."` |
+| **`>>` sobrevive à limpeza** quando não está no início do cue | #4, #5 | um segmento inteiro que é só `">>"` |
+| **Segmentos abaixo de 1,5s** — quando o cue seguinte estoura o limite de palavras, o pendente curto é emitido como está | #1 (15), #3 (120) | `"an S update."` (0,83s) |
+
+Também: **5 segmentos passam de 15 palavras** no vídeo 1, todos de um cue só — o segmentador junta cues, mas nunca parte um.
+
+Os critérios de "pronto quando" do T-04 valem contra as fixtures, não contra legenda real. Corrigido no **T-04b** (ver `PLAN.md`), com os cinco arquivos promovidos a fixture em `tests/fixtures/corpus/`:
+
+| defeito | como ficou |
+|---|---|
+| rolling text de 1–2 palavras | o **cue fantasma** de 10ms passou a ser o sinal: o que ele mostrou é prefixo estrutural e é cortado em qualquer tamanho |
+| segmento de 21,1s | o parser guarda quando a **última palavra começa** (`Cue.speechEndMs`, das marcas `<00:00:01.000>`) e o segmentador corta o silêncio final |
+| `>>` no meio do cue | limpeza global, não só no início — e a etiqueta de speaker que vier junto |
+| segmentos < 1,5s | os limites **esticam até `maxWords + 5`** em vez de emitir um caco; o que sobra é fundido com o vizinho |
+
+Nos cinco vídeos, depois: **nenhum** segmento abaixo de 1,5s, **nenhum** acima de 8s, e fronteiras repetindo 3+ palavras: **zero** (eram dezenas).
 
 ---
 
@@ -81,7 +122,8 @@ A rota automática em Node puro está morta hoje. O `yt-dlp` resolve — inclusi
 
 | | Antes | Depois |
 |---|---|---|
-| T-06 (busca de legenda) | `youtubei.js` numa rota Next.js | **Bloqueado** — depende de decisão sobre `yt-dlp` |
+| T-06 (busca de legenda) | `youtubei.js` numa rota Next.js | **`yt-dlp` validado nos 5 vídeos** — e precisa de `--js-runtimes node` e de tolerar bloqueio temporário por IP |
+| T-04 (segmentador) | fechado | **reabre** — 4 defeitos só visíveis em legenda real (ver S-1c) |
 | T-07 (player) | polling 100ms + lead ~120ms | polling 100ms, **lead 0**, e esperar o seek assentar antes de contar |
 | T-03 (parser SRT/VTT) | plano B | **sobe de importância** — é o caminho garantido |
 | §9 R-06 da spec | risco futuro | **risco materializado no dia 1** |

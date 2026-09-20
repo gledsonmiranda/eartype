@@ -40,8 +40,13 @@ const DEFAULTS: Required<SegmentOptions> = {
 const BRACKETS = /\[[^\]]*\]/g;
 /** A whole cue in parentheses is a sound annotation: `(baaaah!!)`. */
 const ONLY_PARENTHESES = /^\([^)]*\)$/;
-/** Speaker-change marker. */
-const CHEVRONS = /^>>+\s*/;
+/**
+ * Speaker-change marker, with the label that may follow it. Anywhere in the
+ * cue, not only at the start: a speaker change lands mid-cue often enough
+ * (`gotten into her car. >> [music]`), and a lone `>>` left behind becomes a
+ * segment of its own.
+ */
+const CHEVRONS = />>+\s*(?:[A-Z][A-Z0-9 .'’-]{1,24}:\s*)?/g;
 /** Upper-case speaker label: `JOHN:`, `NARRATOR:`, `DR. SMITH:`. */
 const SPEAKER_LABEL = /^[A-Z][A-Z0-9 .'’-]{1,24}:\s*/;
 /** Music lines: ♪ … ♪ */
@@ -49,9 +54,9 @@ const MUSIC_NOTES = /[♪♫]/g;
 
 export function stripNonSpeech(text: string): string {
   let result = text.replace(BRACKETS, ' ');
-  if (MUSIC_NOTES.test(result)) result = result.replace(MUSIC_NOTES, ' ');
-  result = result.replace(CHEVRONS, '');
-  result = result.replace(SPEAKER_LABEL, '');
+  result = result.replace(MUSIC_NOTES, ' ');
+  result = result.replace(CHEVRONS, ' ');
+  result = result.trim().replace(SPEAKER_LABEL, '');
   result = result.trim();
   if (ONLY_PARENTHESES.test(result)) return '';
   return result.replace(/\s+/g, ' ').trim();
@@ -74,12 +79,17 @@ export function countWords(text: string): number {
  * Removes the *rolling text* of auto-generated captions: YouTube repeats the
  * previous line at the start of the next cue.
  *
- * The trim needs at least 3 overlapping words, because a short repeat is real
- * speech — "have really… really really long trunks" must survive intact.
+ * A partial overlap needs at least 3 words to count, because a short repeat is
+ * real speech — "have really… really really long trunks" must survive intact.
+ * When the repeat covers the *whole* previous cue and the two cues are glued
+ * together in time, length stops mattering: that is the rolling text's own
+ * signature, and it is how a one-word cue ("things.") gets repeated.
  */
 const MIN_OVERLAP = 3;
+/** Cues this close together are the same sentence being redrawn on screen. */
+const CONTIGUOUS_MS = 50;
 
-function dropRepeatedPrefix(previous: string, current: string): string {
+function dropRepeatedPrefix(previous: string, current: string, contiguous: boolean): string {
   const previousKeys = words(previous).map(key);
   const currentWords = words(current);
   const currentKeys = currentWords.map(key);
@@ -93,24 +103,71 @@ function dropRepeatedPrefix(previous: string, current: string): string {
     // The whole cue already appeared: it is the ASR's 10ms ghost cue.
     if (k === currentWords.length) return '';
     if (k >= MIN_OVERLAP) return currentWords.slice(k).join(' ');
+    if (contiguous && k === previousKeys.length) return currentWords.slice(k).join(' ');
     return current;
   }
 
   return current;
 }
 
+/**
+ * A cue can stay on screen long after its last word — 20s of it, over music.
+ * Its end would drag the segment far past `maxMs` and leave the player waiting
+ * in silence, so the trailing silence goes, with a tail so the last word is
+ * never clipped. Only ASR tracks carry the word timings this needs.
+ */
+const TRAILING_SILENCE_MS = 1500;
+const LAST_WORD_TAIL_MS = 800;
+
+function trimTrailingSilence(cue: Cue): Cue {
+  const { speechEndMs } = cue;
+  if (speechEndMs === undefined) return cue;
+  if (cue.endMs - speechEndMs <= TRAILING_SILENCE_MS) return cue;
+
+  return { ...cue, endMs: Math.min(cue.endMs, speechEndMs + LAST_WORD_TAIL_MS) };
+}
+
+/** Drops `prefix` from the head of `text`, or returns `null` if it is not there. */
+function dropPrefix(prefix: string, text: string): string | null {
+  const prefixKeys = words(prefix).map(key);
+  const textWords = words(text);
+  if (prefixKeys.length === 0 || prefixKeys.length > textWords.length) return null;
+
+  const matches = prefixKeys.every((word, index) => word === key(textWords[index]));
+  return matches ? textWords.slice(prefixKeys.length).join(' ') : null;
+}
+
 export function cleanCues(cues: Cue[], options: Required<SegmentOptions>): Cue[] {
   const kept: Cue[] = [];
+  /**
+   * The text of the cue just dropped for repeating everything already seen —
+   * the ASR's 10ms *ghost cue*. YouTube redraws that same line at the head of
+   * the next cue, so its text is the one prefix we can strip on sight, however
+   * short it is: "were drunk." / "were drunk. And the longer…".
+   */
+  let ghost: string | null = null;
 
   for (const cue of cues) {
     const text = options.stripNonSpeech ? stripNonSpeech(cue.text) : cue.text.trim();
     if (text === '') continue;
 
     const previous = kept[kept.length - 1];
-    const deduped = previous ? dropRepeatedPrefix(previous.text, text) : text;
-    if (deduped === '') continue;
+    const contiguous = previous !== undefined && cue.startMs - previous.endMs <= CONTIGUOUS_MS;
+    const afterGhost = ghost !== null ? (dropPrefix(ghost, text) ?? text) : text;
+    const deduped =
+      afterGhost === ''
+        ? ''
+        : previous
+          ? dropRepeatedPrefix(previous.text, afterGhost, contiguous)
+          : afterGhost;
 
-    kept.push({ ...cue, text: deduped });
+    if (deduped === '') {
+      ghost = text;
+      continue;
+    }
+
+    ghost = null;
+    kept.push(trimTrailingSilence({ ...cue, text: deduped }));
   }
 
   return kept;
@@ -120,6 +177,9 @@ export function cleanCues(cues: Cue[], options: Required<SegmentOptions>): Cue[]
 
 const SENTENCE_END = /[.!?]["'”’)\]]*$/;
 const WEAK_PUNCTUATION = /[,;:—–-]["'”’)\]]*$/;
+
+/** How far past `maxWords` a segment may go to avoid leaving a scrap behind. */
+const WORD_TOLERANCE = 5;
 
 type Pending = { cues: Cue[]; startMs: number; endMs: number; text: string };
 
@@ -156,7 +216,12 @@ export function segment(cues: Cue[], options: SegmentOptions = {}): Segment[] {
     } else {
       const candidateDuration = cue.endMs - pending.startMs;
       const candidateWords = countWords(`${pending.text} ${cue.text}`);
-      const wouldOverflow = candidateWords > opts.maxWords || candidateDuration > opts.maxMs;
+      // Emitting what is pending would produce a scrap nobody can practise, so
+      // the caps stretch rather than break — up to the tolerance below.
+      const rescuingAScrap = pending.endMs - pending.startMs < opts.minMs;
+      const wordCap = rescuingAScrap ? opts.maxWords + WORD_TOLERANCE : opts.maxWords;
+      const durationCap = rescuingAScrap ? opts.maxMs + opts.minMs : opts.maxMs;
+      const wouldOverflow = candidateWords > wordCap || candidateDuration > durationCap;
 
       if (wouldOverflow) {
         emit();
@@ -197,31 +262,67 @@ export function segment(cues: Cue[], options: SegmentOptions = {}): Segment[] {
   }
 
   emit();
-  return mergeTrailingScrap(segments, opts);
+  return reindex(mergeScraps(segments, opts));
+}
+
+function join(first: Segment, second: Segment): Segment {
+  return {
+    index: first.index,
+    startMs: first.startMs,
+    endMs: second.endMs,
+    referenceText: `${first.referenceText} ${second.referenceText}`,
+    sourceCueIds: [...first.sourceCueIds, ...second.sourceCueIds],
+  };
+}
+
+/** Would joining these two produce something still practiceable? */
+function fits(first: Segment, second: Segment, options: Required<SegmentOptions>): boolean {
+  const merged = join(first, second);
+  return (
+    countWords(merged.referenceText) <= options.maxWords + WORD_TOLERANCE &&
+    merged.endMs - merged.startMs <= options.maxMs + options.minMs
+  );
 }
 
 /**
- * The last segment tends to be whatever was left over. Half a second is not
- * practiceable, so it goes back into the previous segment even if that pushes
- * it a little past the word target.
+ * A segment below `minMs` is not practiceable — half a second of audio is a
+ * blink. Most are gone before this runs (the caps stretch to avoid making
+ * one), but a cue followed by a long silence still produces them, so they go
+ * back into a neighbour: the previous one by preference, since the break was
+ * chosen on the *left* edge; the next one when that does not fit.
+ *
+ * A scrap surrounded by segments that are already full stays as it is. Better
+ * a short segment than one nobody can hold in their head.
  */
-function mergeTrailingScrap(segments: Segment[], options: Required<SegmentOptions>): Segment[] {
-  if (segments.length < 2) return segments;
+function mergeScraps(segments: Segment[], options: Required<SegmentOptions>): Segment[] {
+  const merged: Segment[] = [];
 
-  const last = segments[segments.length - 1];
-  if (last.endMs - last.startMs >= options.minMs) return segments;
+  for (const current of segments) {
+    const previous = merged[merged.length - 1];
+    if (
+      previous !== undefined &&
+      current.endMs - current.startMs < options.minMs &&
+      fits(previous, current, options)
+    ) {
+      merged[merged.length - 1] = join(previous, current);
+      continue;
+    }
 
-  const previous = segments[segments.length - 2];
-  const mergedText = `${previous.referenceText} ${last.referenceText}`;
-  if (countWords(mergedText) > options.maxWords + 5) return segments;
+    if (
+      previous !== undefined &&
+      previous.endMs - previous.startMs < options.minMs &&
+      fits(previous, current, options)
+    ) {
+      merged[merged.length - 1] = join(previous, current);
+      continue;
+    }
 
-  const merged: Segment = {
-    index: previous.index,
-    startMs: previous.startMs,
-    endMs: last.endMs,
-    referenceText: mergedText,
-    sourceCueIds: [...previous.sourceCueIds, ...last.sourceCueIds],
-  };
+    merged.push(current);
+  }
 
-  return [...segments.slice(0, -2), merged];
+  return merged;
+}
+
+function reindex(segments: Segment[]): Segment[] {
+  return segments.map((segment, index) => ({ ...segment, index }));
 }
