@@ -7,9 +7,9 @@
  * text repeated one word at a time. See docs/SPIKE-RESULTS.md §S-1c.
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { parseCaptions } from '@/lib/captions/parse-captions';
 import { countWords, segment } from '@/lib/captions/segmenter';
 import type { Segment } from '@/types';
@@ -28,12 +28,24 @@ const CORPUS = [
   '05-asr-restricted-guess.en.vtt',
 ] as const;
 
+const pathOf = (name: string): string =>
+  fileURLToPath(new URL(`../fixtures/corpus/${name}`, import.meta.url));
+
 const segmentsOf = (name: string): Segment[] =>
-  segment(
-    parseCaptions(
-      readFileSync(fileURLToPath(new URL(`../fixtures/corpus/${name}`, import.meta.url)), 'utf8'),
-    ).cues,
+  segment(parseCaptions(readFileSync(pathOf(name), 'utf8')).cues);
+
+/**
+ * The corpus is other people's captions, so it is not in the repo — only the
+ * videoIds are. `npm run corpus` brings it back; without it this suite steps
+ * aside instead of failing a clean checkout.
+ */
+const present = CORPUS.every((name) => existsSync(pathOf(name)));
+
+if (!present) {
+  console.warn(
+    '[corpus] fixtures ausentes — rode `npm run corpus` para baixá-las. Suite ignorada.',
   );
+}
 
 const wordKeys = (text: string): string[] =>
   text
@@ -57,8 +69,13 @@ const median = (values: number[]): number => {
   return sorted[Math.floor((sorted.length - 1) / 2)];
 };
 
-describe.each(CORPUS)('%s', (name) => {
-  const segments = segmentsOf(name);
+describe.skipIf(!present).each(CORPUS)('%s', (name) => {
+  // Read in `beforeAll`, not in the describe body: a skipped suite is still
+  // collected, and a missing file would blow up before the skip took effect.
+  let segments: Segment[];
+  beforeAll(() => {
+    segments = segmentsOf(name);
+  });
 
   it('produces segments', () => {
     expect(segments.length).toBeGreaterThan(100);

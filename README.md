@@ -13,6 +13,7 @@ npm install
 npm run dev      # http://localhost:3000
 npm run check    # typecheck + lint + testes, o que roda antes de commitar
 npm test         # só os testes (Vitest)
+npm run corpus   # baixa as legendas reais que um teste usa (opcional, precisa de yt-dlp)
 ```
 
 Atalhos na tela de prática: `Enter` verifica (e, depois de errar, aceita e segue),
@@ -76,13 +77,18 @@ lib/
 types/                 contratos compartilhados (Cue, Segment, DiffResult)
 tests/                 Vitest, espelhando a árvore de lib/
   fixtures/            legendas pequenas, escritas à mão
-  fixtures/corpus/     cinco legendas reais do YouTube (ver o README de lá)
+  fixtures/corpus/     cinco legendas reais, fora do git (`npm run corpus`)
+scripts/               utilitários de desenvolvimento
 docs/                  SPEC (o quê), PLAN (em que ordem), SPIKE-RESULTS, DESIGN
 ```
 
 A regra que sustenta esse desenho: **`lib/` não conhece React, DOM nem YouTube**
 — exceto `lib/player/youtube-iframe.ts`, que existe justamente para isolar o que
-precisa do browser. É por isso que 330 testes rodam em ~2s sem rede.
+precisa do browser. É por isso que os testes rodam em ~2s sem rede.
+
+Legenda de terceiro não é versionada aqui: o corpus de cinco vídeos reais fica
+fora do git e volta com `npm run corpus`. Sem ele a suíte do corpus se declara
+ignorada, e os outros 290 testes seguem valendo num clone limpo.
 
 ## Estado
 

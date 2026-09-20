@@ -47,3 +47,7 @@ spike/
 
 # cache de legenda no servidor (T-06)
 .cache/
+
+# Corpus de legendas reais: conteúdo de terceiro, fica só na máquina.
+# `npm run corpus` baixa de novo. Ver tests/fixtures/corpus/README.md.
+tests/fixtures/corpus/*.vtt

@@ -1,9 +1,19 @@
 # Corpus de legendas reais
 
-Cinco legendas baixadas do YouTube com `yt-dlp` em 2026-09-20, uma faixa `en` por
-vídeo, exatamente como chegam do provedor — nada foi editado à mão. São os cinco
-tipos previstos no Passo 0 do `docs/PLAN.md` (S-1), e o resultado da coleta está em
+Cinco legendas baixadas do YouTube com `yt-dlp`, uma faixa `en` por vídeo,
+exatamente como chegam do provedor — nada foi editado à mão. São os cinco tipos
+previstos no Passo 0 do `docs/PLAN.md` (S-1), e o resultado da coleta está em
 `docs/SPIKE-RESULTS.md` §S-1c.
+
+> **Os `.vtt` não estão no git.** São legendas de vídeos de terceiros e o repo é
+> público; o que fica versionado são os `videoId`, no script. Para trazê-las:
+>
+> ```bash
+> npm run corpus
+> ```
+>
+> Sem elas, `tests/captions/segmenter-corpus.test.ts` se declara ignorado em vez
+> de reprovar — os outros 290 testes não dependem de rede nenhuma.
 
 | arquivo | videoId | tipo | duração | legenda |
 | --- | --- | --- | --- | --- |
