@@ -1,6 +1,7 @@
 # Resultados do spike — 2026-09-20
 
-Passo 0 do `PLAN.md`. Código em `/spike` (descartável).
+Passo 0 do `PLAN.md`. O código era descartável e foi apagado depois que virou
+este documento e as decisões que ele carrega; o que ficou está aqui.
 Ambiente: Windows 11, Node 24.19, Python 3.12.10, Chrome.
 
 ---
@@ -22,7 +23,8 @@ A biblioteca **lista** as faixas de legenda, mas **não consegue baixá-las**:
 **Armadilha encontrada no caminho:** com `retrieve_player: false`, o `getInfo` devolve `playability_status: UNPLAYABLE` e **zero faixas** — um falso negativo que faz parecer que o vídeo não tem legenda. Com `retrieve_player: true`, o mesmo vídeo devolve `OK` e as faixas `en(manual), de(manual)`. Qualquer diagnóstico futuro precisa usar `true`.
 
 ### O que funcionou: `yt-dlp`
-Versão 2026.08.19, instalado em venv isolado (`spike/.venv`):
+Versão 2026.08.19, na época instalada num venv isolado só para o spike (hoje o
+app espera o `yt-dlp` no PATH ou em `YT_DLP_PATH` — ver README):
 
 ```
 yt-dlp --skip-download --write-sub --write-auto-sub --sub-lang "en.*" --sub-format vtt
