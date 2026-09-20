@@ -7,8 +7,8 @@
  */
 
 import { useState } from 'react';
-import { EntryScreen, type StartRequest } from '@/app/components/entry-screen';
-import { PracticeScreen } from '@/app/components/practice-screen';
+import { EntryScreen, type StartRequest } from '@/app/components/EntryScreen';
+import { PracticeScreen } from '@/app/components/PracticeScreen';
 
 export default function Home() {
   const [session, setSession] = useState<StartRequest | null>(null);

@@ -168,7 +168,7 @@ Persisted locally: correction mode (lenient/strict), segment size, default speed
 | `Ctrl/Cmd + →` | Skip segment |
 | `Esc` | Pause the session |
 
-None of these shortcuts conflicts with a browser command. `Ctrl+R` (reload) was **deliberately avoided**: if the `preventDefault` ever failed, the page would reload and — in the MVP, which has no persistence — the whole session would be lost.
+The shortcut rule is in `RULES.md`: none of these may conflict with a browser command. `Ctrl+R` (reload) was avoided for exactly that reason — see `RULES.md` for why.
 
 ### RF-11 — Transcript panel
 A column to the right of the practice area, listing every segment with its start timestamp and the current one highlighted.

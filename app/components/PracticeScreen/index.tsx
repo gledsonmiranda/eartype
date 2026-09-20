@@ -9,9 +9,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccuracyBadge, DiffView } from '@/app/components/diff-view';
-import { TranscriptPanel } from '@/app/components/transcript-panel';
-import { VideoPlayer } from '@/app/components/video-player';
+import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
+import { TranscriptPanel } from '@/app/components/TranscriptPanel';
+import { VideoPlayer } from '@/app/components/VideoPlayer';
 import { compare, isPerfect } from '@/lib/correction/diff';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
 import {
@@ -152,10 +152,26 @@ export function PracticeScreen({
     setSession((current) => recordOutcome(current, 'skipped'));
   };
 
+  const togglePause = () => {
+    const current = player.current;
+    if (current === null) return;
+    // YT.PlayerState.PLAYING === 1 — the only state worth resuming *from*.
+    if (current.getPlayerState() === 1) current.pauseVideo();
+    else current.playVideo();
+  };
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && event.ctrlKey) {
       event.preventDefault();
       play();
+      return;
+    }
+
+    // Space pauses/resumes — but only before typing starts, so it still
+    // works as a normal word separator once there's an answer in progress.
+    if (event.key === ' ' && typed === '') {
+      event.preventDefault();
+      togglePause();
       return;
     }
 
@@ -302,7 +318,8 @@ export function PracticeScreen({
             {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
           </span>
           <span className="hidden sm:inline">
-            Enter verifica · Ctrl+Enter repete · Ctrl+→ revela · Alt+←/→ navega
+            Enter verifica · Ctrl+Enter repete · Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
+            navega
           </span>
           <span className="flex items-center gap-2">
             {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}

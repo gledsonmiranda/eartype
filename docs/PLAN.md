@@ -93,7 +93,7 @@ yt-dlp --skip-download --write-sub --write-auto-sub --sub-lang en --sub-format v
 - ~~`export const runtime = 'nodejs'` on the route~~ — **dropped**: in this version of Next, `nodejs` is already the default and the Edge runtime is deprecated; the docs themselves say to remove the export (`node_modules/next/dist/docs/.../runtime.md`). The route still needs Node, it just no longer has to declare it.
 - A timeout on `execFile` (60s) and cleanup of the temp directory in `finally`.
 - Caching is mandatory: ~2.3s per lookup.
-- Process errors translated into the UI's error types — never leak yt-dlp's stderr to the screen.
+- Errors follow the convention in `RULES.md`: typed error codes out, never yt-dlp's raw stderr.
 
 - **`--js-runtimes node`** (discovered in S-1c): without a JS runtime, yt-dlp falls into a deprecated extraction path and loses metadata. An old version that does not know the option rejects the call, and then it is retried without the flag.
 
@@ -138,7 +138,7 @@ type TokenStatus = 'correct' | 'typo' | 'wrong' | 'missing' | 'extra';
 type DiffResult  = { tokens: { text: string; status: TokenStatus; expected?: string }[]; accuracy: number };
 ```
 
-The rule: `segmenter`, `normalize` and `diff` **know nothing about React, YouTube or the DOM**. They take data and return data. That is what keeps the test suite fast, and what allows swapping the caption source without touching the correction logic.
+The architecture boundary these rely on is in `RULES.md`: they take data and return data. That is what keeps the test suite fast, and what allows swapping the caption source without touching the correction logic.
 
 ---
 

@@ -8,8 +8,8 @@ The idea is simple: understanding a video with the subtitles on is easy, and it
 lies to you. Typing what you heard does not forgive — either the word reached
 your ear or it did not.
 
-Personal tool, runs on `localhost`. The interface is in Portuguese; code, docs
-and commits are in English.
+Personal tool, runs on `localhost`. Language and other engineering conventions
+are in `docs/RULES.md`.
 
 ## How it works
 
@@ -119,10 +119,8 @@ scripts/               development utilities
 docs/                  SPEC (what), PLAN (in what order), SPIKE-RESULTS, DESIGN
 ```
 
-The rule holding the design up: **`lib/` knows nothing about React, the DOM or
-YouTube** — except `lib/player/youtube-iframe.ts`, which exists precisely to
-isolate what only the browser can solve. That is why the tests run in ~2s
-without touching the network.
+The architecture boundary holding the design up lives in `docs/RULES.md`. That is
+why the tests run in ~2s without touching the network.
 
 ## Tests
 
@@ -168,6 +166,7 @@ Known limitations today:
 
 | file | what it is |
 | --- | --- |
+| `docs/RULES.md` | code rules: naming, architecture boundary, errors, language |
 | `docs/SPEC.md` | what and why: requirements, normalization rules, risks |
 | `docs/PLAN.md` | in what order, with a "done when" per task |
 | `docs/SPIKE-RESULTS.md` | what was measured before writing the app — and what broke |
