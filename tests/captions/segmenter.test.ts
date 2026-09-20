@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseCaptions } from '@/lib/captions/parse-captions';
-import { countWords, segment, stripNonSpeech } from '@/lib/segmenter';
+import { countWords, segment, stripNonSpeech } from '@/lib/captions/segmenter';
 import type { Cue } from '@/types';
 
 const fixture = (name: string) =>
-  parseCaptions(readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), 'utf8'))
+  parseCaptions(readFileSync(fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url)), 'utf8'))
     .cues;
 
 /** Sugar for building cues in tests: `cue(0, 2, 'text')` in seconds. */

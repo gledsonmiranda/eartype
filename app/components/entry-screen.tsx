@@ -10,7 +10,7 @@
 
 import { useState } from 'react';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
-import { segment as segmentCues } from '@/lib/segmenter';
+import { segment as segmentCues } from '@/lib/captions/segmenter';
 import { parseYouTubeUrl } from '@/lib/youtube/parse-url';
 import type { CaptionKind, Cue, Segment } from '@/types';
 

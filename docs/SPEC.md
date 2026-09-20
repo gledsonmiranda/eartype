@@ -1,7 +1,7 @@
 # Spec — Practice With Video (dictation trainer)
 
 > Status: **draft v1** · Data: 2026-09-20 · Autor: Gledson Miranda
-> Repositório: `pratice-with-video` (vazio, sem commits ainda)
+> Fase 1 (MVP) implementada — ver `PLAN.md` para o que cada tarefa entregou.
 
 ---
 

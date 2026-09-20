@@ -1,5 +1,5 @@
 /**
- * Core domain contracts (PLAN.md §Contratos).
+ * Core domain contracts (docs/PLAN.md §Contratos).
  *
  * Rule: `segmenter`, `normalize` and `diff` know nothing about React, YouTube
  * or the DOM. Data in, data out.

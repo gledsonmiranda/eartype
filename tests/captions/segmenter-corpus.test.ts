@@ -4,14 +4,14 @@
  * The hand-written fixtures test the rules one at a time; this suite tests
  * what has to hold over a whole video, because that is where the segmenter
  * failed: scraps of under a second, cues that stay on screen for 20s, rolling
- * text repeated one word at a time. See SPIKE-RESULTS.md §S-1c.
+ * text repeated one word at a time. See docs/SPIKE-RESULTS.md §S-1c.
  */
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseCaptions } from '@/lib/captions/parse-captions';
-import { countWords, segment } from '@/lib/segmenter';
+import { countWords, segment } from '@/lib/captions/segmenter';
 import type { Segment } from '@/types';
 
 const MIN_MS = 1500;
@@ -31,7 +31,7 @@ const CORPUS = [
 const segmentsOf = (name: string): Segment[] =>
   segment(
     parseCaptions(
-      readFileSync(fileURLToPath(new URL(`./fixtures/corpus/${name}`, import.meta.url)), 'utf8'),
+      readFileSync(fileURLToPath(new URL(`../fixtures/corpus/${name}`, import.meta.url)), 'utf8'),
     ).cues,
   );
 

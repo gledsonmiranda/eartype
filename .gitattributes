@@ -1,0 +1,7 @@
+# Line endings normalizados: o repo guarda LF, o checkout no Windows fica
+# a cargo do core.autocrlf de cada um.
+* text=auto eol=lf
+
+# Legendas de teste: bytes como vieram do provedor, sem conversão.
+*.vtt -text
+*.srt -text

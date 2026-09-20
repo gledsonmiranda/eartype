@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compare, editDistance, isPerfect, isTypo, missedWords } from '@/lib/diff';
-import { canonicalize } from '@/lib/normalize';
+import { compare, editDistance, isPerfect, isTypo, missedWords } from '@/lib/correction/diff';
+import { canonicalize } from '@/lib/correction/normalize';
 
 const statuses = (reference: string, typed: string) =>
   compare(reference, typed).tokens.map((token) => token.status);

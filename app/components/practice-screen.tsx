@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccuracyBadge, DiffView } from '@/app/components/diff-view';
 import { VideoPlayer } from '@/app/components/video-player';
-import { compare, isPerfect } from '@/lib/diff';
+import { compare, isPerfect } from '@/lib/correction/diff';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
 import {
   PLAYER_ERROR_MESSAGES,
@@ -28,7 +28,7 @@ import {
   startSession,
   tally,
   type Session,
-} from '@/lib/session';
+} from '@/lib/practice/session';
 import type { CaptionKind, CorrectionMode, DiffResult, Segment } from '@/types';
 
 /** §RF-05 — a clean answer moves on by itself, fast enough to keep the rhythm. */

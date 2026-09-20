@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalize, numberFromWords, ordinalSuffix, tokensMatch } from '@/lib/normalize';
+import { canonicalize, numberFromWords, ordinalSuffix, tokensMatch } from '@/lib/correction/normalize';
 
 /** Only the canonical forms, which is what the diff compares. */
 const canon = (text: string) => canonicalize(text).map((token) => token.canonical);

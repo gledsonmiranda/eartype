@@ -2,8 +2,8 @@
 
 Cinco legendas baixadas do YouTube com `yt-dlp` em 2026-09-20, uma faixa `en` por
 vídeo, exatamente como chegam do provedor — nada foi editado à mão. São os cinco
-tipos previstos no Passo 0 do `PLAN.md` (S-1), e o resultado da coleta está em
-`SPIKE-RESULTS.md` §S-1c.
+tipos previstos no Passo 0 do `docs/PLAN.md` (S-1), e o resultado da coleta está em
+`docs/SPIKE-RESULTS.md` §S-1c.
 
 | arquivo | videoId | tipo | duração | legenda |
 | --- | --- | --- | --- | --- |
@@ -16,7 +16,7 @@ tipos previstos no Passo 0 do `PLAN.md` (S-1), e o resultado da coleta está em
 Por que legenda real e não fixture escrita à mão: as fixtures de `tests/fixtures/`
 foram desenhadas a partir da spec, e por isso só continham os problemas que já
 tínhamos imaginado. Estes cinco arquivos derrubaram quatro invariantes do
-segmentador que passavam verdes contra as fixtures (ver `SPIKE-RESULTS.md`).
+segmentador que passavam verdes contra as fixtures (ver `docs/SPIKE-RESULTS.md`).
 
 As fixtures pequenas continuam servindo para testar regra a regra; este corpus
 serve para testar **invariantes** — nenhum segmento curto demais, nenhum rolling

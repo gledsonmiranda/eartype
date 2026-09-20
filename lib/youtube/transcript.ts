@@ -4,7 +4,7 @@
  * Node in-process cannot do this any more: the `timedtext` endpoint answers
  * `200` with an empty body to anything without a proof-of-origin token. The
  * yt-dlp binary still gets through, and a child process is not subject to the
- * block (measured in SPIKE-RESULTS.md §S-1b, ~2,3s per video).
+ * block (measured in docs/SPIKE-RESULTS.md §S-1b, ~2,3s per video).
  *
  * What the spike forces on this module:
  * - **one caption track per video** — the third request in a row took a 429,

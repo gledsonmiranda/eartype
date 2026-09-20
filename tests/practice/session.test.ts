@@ -9,7 +9,7 @@ import {
   recordOutcome,
   startSession,
   tally,
-} from '@/lib/session';
+} from '@/lib/practice/session';
 
 describe('startSession', () => {
   it('starts at the first segment with everything pending', () => {

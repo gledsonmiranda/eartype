@@ -40,10 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# spike (código descartável do Passo 0)
-spike/node_modules/
-spike/.venv/
-spike/cap/
+# spike do Passo 0: o código foi removido depois que as respostas viraram
+# docs/SPIKE-RESULTS.md. A pasta só sobrevive quando guarda um venv local com o
+# yt-dlp (ver README) — nada dela vai para o git.
+spike/
 
 # cache de legenda no servidor (T-06)
 .cache/

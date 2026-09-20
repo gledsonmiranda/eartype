@@ -8,7 +8,7 @@
  * Knows nothing about the network or the DOM: text in, `Cue[]` out.
  *
  * User-facing error messages stay in Portuguese — they are shown as-is in the
- * UI, and SPEC.md writes them that way.
+ * UI, and docs/SPEC.md writes them that way.
  */
 
 import type { CaptionFormat, Cue } from '@/types';

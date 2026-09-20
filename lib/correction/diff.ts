@@ -8,7 +8,7 @@
  * No React, no DOM: text in, `DiffResult` out.
  */
 
-import { canonicalize, tokensMatch, type Token } from '@/lib/normalize';
+import { canonicalize, tokensMatch, type Token } from '@/lib/correction/normalize';
 import type { CorrectionMode, DiffResult, DiffToken } from '@/types';
 
 /**

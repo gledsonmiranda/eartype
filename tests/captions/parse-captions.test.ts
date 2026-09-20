@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CaptionParseError, parseCaptions, stripInlineTags } from '@/lib/captions/parse-captions';
 
 const fixture = (name: string) =>
-  readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), 'utf8');
+  readFileSync(fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url)), 'utf8');
 
 describe('parseCaptions — SRT', () => {
   const srt = `1
