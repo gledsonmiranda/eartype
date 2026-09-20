@@ -19,7 +19,7 @@ URL  →  legenda (yt-dlp, ou colada à mão)  →  cues  →  trechos praticáv
    diff palavra a palavra  ←  o que você digitou  ←  toca e pausa no fim
 ```
 
-Quatro decisões moldam o resto:
+Cinco decisões moldam o resto:
 
 - **A pausa é por polling.** A IFrame API do YouTube não avisa "cheguei no tempo
   X", então o app lê `getCurrentTime()` a cada 100ms e pausa ao cruzar a marca.
@@ -35,6 +35,9 @@ Quatro decisões moldam o resto:
   existe para isso.
 - **Colar a legenda à mão é caminho de primeira classe**, não tela de erro. É a
   única rota que não depende de um endpoint não documentado continuar de pé.
+- **A transcrição fica ao lado, borrada.** Cada trecho sai do blur quando você o
+  responde, então o painel preenchido é o seu progresso — e um botão desliga o
+  blur inteiro quando você preferir ler acompanhando.
 
 ## Rodando
 
@@ -56,7 +59,7 @@ Na tela de prática a mão não precisa sair do teclado:
 | `Ctrl+→` | revela a resposta e segue |
 | `Alt+←` / `Alt+→` | trecho anterior / próximo |
 
-Acertou em cheio, avança sozinho depois de 700ms.
+Acertou em cheio, aparece **"✓ acertou"** e o trecho avança sozinho em 1,2s.
 
 ## Pré-requisito externo: `yt-dlp`
 
@@ -121,7 +124,7 @@ o browser resolve. É por isso que os testes rodam em ~2s sem tocar na rede.
 
 ## Testes
 
-330 testes, todos offline. O que é lógica pura — parser, segmentador,
+335 testes, todos offline. O que é lógica pura — parser, segmentador,
 normalização, diff, sessão — é testado direto; o player roda sob *fake timers*
 com um player falso; a busca de legenda injeta o executor de comando, então nem
 binário nem vídeo são necessários.

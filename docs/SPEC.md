@@ -130,7 +130,7 @@ Cada segmento final tem: `{ index, startMs, endMs, referenceText, sourceCueIds }
   4. Classifica cada token: **acerto**, **erro de digitação**, **palavra errada**, **faltando**, **sobrando**.
 - Resultado mostra a frase de referência com marcação colorida e a sua tentativa alinhada.
 - Acurácia do segmento = tokens corretos / tokens da referência.
-- Se acertou tudo: avança sozinho para o próximo segmento após ~700ms.
+- Se acertou tudo: mostra **"✓ acertou"** com a frase em verde e avança sozinho após ~1,2s. (Era 700ms; no uso real o acerto sumia da tela antes de ser percebido — e ver que acertou é metade do que traz alguém de volta ao exercício.)
 - Se errou: mostra o diff e espera ação — **tentar de novo** (limpa o campo, replay automático do áudio) ou **aceitar e seguir**.
 - Limite configurável de tentativas antes de revelar a resposta (padrão: 3; 0 = ilimitado).
 
@@ -169,6 +169,15 @@ Persistidas localmente: modo de correção (tolerante/estrito), tamanho de segme
 | `Esc` | Pausar sessão |
 
 Nenhum desses atalhos conflita com comandos do browser. `Ctrl+R` (reload) foi **deliberadamente evitado**: se o `preventDefault` falhasse, a página recarregaria e — no MVP, que não tem persistência — a sessão inteira seria perdida.
+
+### RF-11 — Painel de transcrição
+Coluna à direita da prática, listando todos os trechos com o timestamp de início e o atual destacado.
+
+- **Todo trecho nasce borrado** (`blur`). Ler a legenda derrota o exercício (§9, R-04), e o painel é literalmente a folha de respostas.
+- **Um trecho sai do blur quando é respondido** — acertado, aceito com erro ou revelado. Nos dois últimos a resposta já foi mostrada de qualquer forma; no primeiro, o desborrar é a recompensa, e o painel preenchido vira o registro visível do progresso.
+- **Botão "mostrar tudo"** desliga o blur de uma vez, inclusive do que ainda não foi praticado. É deliberado: ler acompanhando é um jeito legítimo de atacar um vídeo difícil. O padrão é desligado.
+- Clicar num trecho pula para ele. As linhas ficam fora da ordem de tabulação — com centenas de trechos, tabular por elas atrapalharia mais que ajudaria.
+- O blur é disciplina, não cadeado: quem abrir o inspetor lê. Não é o que ele existe para impedir.
 
 ---
 

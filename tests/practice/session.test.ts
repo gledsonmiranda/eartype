@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   countAttempt,
+  isRevealed,
   firstPending,
   goTo,
   isFinished,
@@ -81,6 +82,20 @@ describe('outcomes', () => {
 
     expect(firstPending(session)).toBe(1);
     expect(firstPending(recordOutcome(startSession(1), 'correct'))).toBeNull();
+  });
+});
+
+describe('isRevealed', () => {
+  it('keeps a segment hidden until it is answered', () => {
+    expect(isRevealed('pending')).toBe(false);
+  });
+
+  it.each(['correct', 'accepted', 'skipped'] as const)('reveals an answered one (%s)', (outcome) => {
+    expect(isRevealed(outcome)).toBe(true);
+  });
+
+  it('shows everything when asked to', () => {
+    expect(isRevealed('pending', true)).toBe(true);
   });
 });
 

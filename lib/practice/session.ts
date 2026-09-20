@@ -79,6 +79,16 @@ export function firstPending(session: Session): number | null {
   return index === -1 ? null : index;
 }
 
+/**
+ * Whether a segment's text may be on screen. Answering it earns the reveal —
+ * including the answers given up on, since those already showed the text — and
+ * `showAll` is the escape hatch for when you want to read along instead of
+ * practise.
+ */
+export function isRevealed(outcome: SegmentOutcome, showAll = false): boolean {
+  return showAll || outcome !== 'pending';
+}
+
 export type SessionTally = {
   correct: number;
   accepted: number;
