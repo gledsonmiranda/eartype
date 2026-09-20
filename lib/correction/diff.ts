@@ -179,6 +179,32 @@ export function isPerfect(result: DiffResult): boolean {
 }
 
 /**
+ * POC — live per-word feedback while typing, without touching sentence-level
+ * scoring: `check()` in the practice screen still only runs on Enter, using
+ * `compare` above unchanged.
+ *
+ * Reuses the same alignment, but only over words the user has actually
+ * finished (space-terminated) — the word still being typed is excluded, and
+ * the unreached reference tail is trimmed off so it doesn't read as an error.
+ */
+export function liveCompare(
+  reference: string,
+  typed: string,
+  mode: CorrectionMode = 'lenient',
+): DiffToken[] {
+  const endsWithSpace = /\s$/.test(typed);
+  const words = typed.trim().split(/\s+/).filter(Boolean);
+  const completedWords = endsWithSpace ? words : words.slice(0, -1);
+  if (completedWords.length === 0) return [];
+
+  const { tokens } = compare(reference, completedWords.join(' '), mode);
+
+  let end = tokens.length;
+  while (end > 0 && tokens[end - 1].status === 'missing') end--;
+  return tokens.slice(0, end);
+}
+
+/**
  * Reference words that failed — feeds the "problem words" list of §RF-08.
  * Typos are left out: the ear got it right.
  */

@@ -25,9 +25,9 @@ const LABELS: Record<TokenStatus, string> = {
   extra: 'sobrou',
 };
 
-function Token({ token }: { token: DiffToken }) {
+function Token({ token, showCorrection }: { token: DiffToken; showCorrection: boolean }) {
   const correction =
-    (token.status === 'typo' || token.status === 'wrong') && token.expected !== undefined
+    showCorrection && (token.status === 'typo' || token.status === 'wrong') && token.expected !== undefined
       ? token.expected
       : null;
 
@@ -46,14 +46,26 @@ function Token({ token }: { token: DiffToken }) {
   );
 }
 
-export function DiffView({ result }: { result: DiffResult }) {
+export function DiffView({
+  result,
+  tokens,
+  showCorrections = true,
+  ariaLabel = 'correção da sua resposta',
+}: {
+  result?: DiffResult;
+  tokens?: DiffToken[];
+  showCorrections?: boolean;
+  ariaLabel?: string;
+}) {
+  const items = tokens ?? result?.tokens ?? [];
+
   return (
     <p
       className="flex flex-wrap gap-x-2 gap-y-1 font-mono text-lg leading-relaxed"
-      aria-label="correção da sua resposta"
+      aria-label={ariaLabel}
     >
-      {result.tokens.map((token, index) => (
-        <Token key={`${index}-${token.text}`} token={token} />
+      {items.map((token, index) => (
+        <Token key={`${index}-${token.text}`} token={token} showCorrection={showCorrections} />
       ))}
     </p>
   );

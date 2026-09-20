@@ -8,11 +8,11 @@
  * leave the keyboard — Enter checks and advances, Ctrl+Enter replays.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
-import { compare, isPerfect } from '@/lib/correction/diff';
+import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
 import {
   PLAYER_ERROR_MESSAGES,
@@ -73,6 +73,13 @@ export function PracticeScreen({
   const segment = segments[session.index];
   const canBeStrict = captionKind === 'manual';
   const mode: CorrectionMode = strict && canBeStrict ? 'strict' : 'lenient';
+
+  // POC — live per-word feedback as you type. Sentence-level scoring is
+  // untouched: it still only runs in `check()`, on Enter.
+  const liveTokens = useMemo(() => {
+    if (result !== null || segment === undefined) return [];
+    return liveCompare(segment.referenceText, typed, mode);
+  }, [result, segment, typed, mode]);
 
   const play = useCallback(() => {
     const current = player.current;
@@ -266,6 +273,12 @@ export function PracticeScreen({
               placeholder="digite o que ouviu e aperte Enter"
               className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 p-3 font-mono text-lg text-zinc-100 outline-none focus:border-zinc-400"
             />
+
+            {result === null && liveTokens.length > 0 && (
+              <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-3">
+                <DiffView tokens={liveTokens} showCorrections={false} ariaLabel="progresso, palavra por palavra" />
+              </div>
+            )}
 
             {result !== null && (
               <div
