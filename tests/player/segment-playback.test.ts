@@ -41,13 +41,34 @@ function fakePlayer(startAt = 0): FakePlayer {
 const segment = { startMs: 10_000, endMs: 14_000 };
 
 describe('playSegment', () => {
-  it('seeks and plays straight away', () => {
+  it('seeks a bit before the start mark, to leave slack for the seek itself', () => {
     vi.useFakeTimers();
     const player = fakePlayer();
 
     playSegment(player, segment, { onEnd: () => undefined });
 
+    // Default startPaddingMs is 200 — 10s becomes 9.8s.
+    expect(player.calls).toEqual(['seek:9.8', 'play']);
+    vi.useRealTimers();
+  });
+
+  it('accepts a custom (or zero) start padding', () => {
+    vi.useFakeTimers();
+    const player = fakePlayer();
+
+    playSegment(player, segment, { onEnd: () => undefined, startPaddingMs: 0 });
+
     expect(player.calls).toEqual(['seek:10', 'play']);
+    vi.useRealTimers();
+  });
+
+  it('never seeks before zero, for a segment that starts near the beginning', () => {
+    vi.useFakeTimers();
+    const player = fakePlayer();
+
+    playSegment(player, { startMs: 100, endMs: 4000 }, { onEnd: () => undefined });
+
+    expect(player.calls).toEqual(['seek:0', 'play']);
     vi.useRealTimers();
   });
 

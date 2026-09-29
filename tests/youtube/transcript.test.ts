@@ -54,6 +54,31 @@ const runnerWriting = (name: string, content: string): CommandRunner => {
   };
 };
 
+/** The same moment as MANUAL_VTT, as the recogniser timed it: ~0.3s later. */
+const ASR_FOR_MANUAL_VTT = [
+  'WEBVTT',
+  'Kind: captions',
+  'Language: en',
+  '',
+  '00:00:17.000 --> 00:00:19.500 align:start position:0%',
+  ' ',
+  'So<00:00:17.160><c> if</c><00:00:17.320><c> this</c><00:00:17.480><c> were</c><00:00:17.640><c> back</c><00:00:17.880><c> in</c><00:00:18.600><c> 2011,</c>',
+  '',
+].join('\n');
+
+/**
+ * A video with both tracks: the first download (`--write-sub`) gets the
+ * manual one, the ASR-only download gets `asr` — or fails, when it is `null`.
+ */
+const runnerWithBothTracks = (asr: string | null): CommandRunner => {
+  const manual = runnerWriting('abc.en.vtt', MANUAL_VTT);
+  return async (binary, args, options) => {
+    if (args.includes('--write-sub')) return manual(binary, args, options);
+    if (asr === null) throw new CommandFailure({ stderr: 'HTTP Error 429: Too Many Requests' });
+    return runnerWriting('abc.en.vtt', asr)(binary, args, options);
+  };
+};
+
 /** A runner that succeeds and writes nothing — a video with no English track. */
 const runnerWritingNothing: CommandRunner = async () => ({ stdout: '', stderr: '' });
 
@@ -170,6 +195,51 @@ describe('fetchTranscript', () => {
     expect((error as TranscriptError).message).not.toMatch(/ERROR|yt-dlp|stderr/);
   });
 
+  it('re-times manual cues against the ASR track', async () => {
+    const transcript = await fetchTranscript('abc', { run: runnerWithBothTracks(ASR_FOR_MANUAL_VTT) });
+
+    expect(transcript.retimed).toBe(true);
+    expect(transcript.cues.map((cue) => cue.text)).toEqual(['So if this were back in', '2011,']);
+    expect(transcript.cues[0].startMs).toBe(17000);
+    expect(transcript.cues[1].startMs).toBe(18600);
+  });
+
+  it('asks the second download for the ASR track only', async () => {
+    const calls: string[][] = [];
+    const both = runnerWithBothTracks(ASR_FOR_MANUAL_VTT);
+    await fetchTranscript('abc', {
+      run: async (binary, args, options) => {
+        calls.push(args);
+        return both(binary, args, options);
+      },
+    });
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toContain('--write-auto-sub');
+    expect(calls[1]).not.toContain('--write-sub');
+  });
+
+  it('keeps the manual timings when the ASR track cannot be had', async () => {
+    const transcript = await fetchTranscript('abc', { run: runnerWithBothTracks(null) });
+
+    expect(transcript.retimed).toBe(false);
+    expect(transcript.cues[0].startMs).toBe(16720);
+  });
+
+  it('makes one download only for an ASR-only video', async () => {
+    let calls = 0;
+    const write = runnerWriting('abc.en.vtt', ASR_VTT);
+    const transcript = await fetchTranscript('abc', {
+      run: async (binary, args, options) => {
+        calls++;
+        return write(binary, args, options);
+      },
+    });
+
+    expect(calls).toBe(1);
+    expect(transcript.retimed).toBeUndefined();
+  });
+
   it('leaves no temporary directory behind, success or failure', async () => {
     const before = (await readdir(tmpdir())).filter((name) => name.startsWith('pwv-captions-'));
 
@@ -247,6 +317,26 @@ describe('getTranscript — cache', () => {
     await getTranscript('abc', { run, cacheDir });
 
     expect(calls()).toBe(2);
+  });
+
+  it('refetches a manual entry cached before re-timing existed', async () => {
+    const stale = {
+      videoId: 'abc',
+      kind: 'manual',
+      lang: 'en',
+      format: 'vtt',
+      cues: [{ id: 'c0', startMs: 0, endMs: 1000, text: 'old' }],
+      fetchedAt: new Date().toISOString(),
+    };
+    await writeFile(join(cacheDir, 'abc.json'), JSON.stringify(stale), 'utf8');
+
+    const transcript = await getTranscript('abc', {
+      run: runnerWithBothTracks(ASR_FOR_MANUAL_VTT),
+      cacheDir,
+    });
+
+    expect(transcript.cached).toBe(false);
+    expect(transcript.retimed).toBe(true);
   });
 
   it('writes nothing to disk when the cache is off', async () => {

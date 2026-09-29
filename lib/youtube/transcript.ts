@@ -14,6 +14,10 @@
  * - the YouTube block can also be a plain `Sign in to confirm you're not a
  *   bot` on an IP that asked too much — temporary, and worth its own message.
  *
+ * Manual captions get a second, best-effort download: the ASR track of the
+ * same video, whose word timings re-time the hand-typed cues
+ * (`lib/captions/retime`). If it fails, the manual timings stay.
+ *
  * The command runner is injectable so the whole module can be tested without
  * a binary, a network or a video.
  */
@@ -23,6 +27,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseCaptions } from '@/lib/captions/parse-captions';
+import { parseTimedWords, retimeCues } from '@/lib/captions/retime';
 import type { CaptionFormat, CaptionKind, Cue } from '@/types';
 
 export type TranscriptErrorCode =
@@ -54,6 +59,12 @@ export type Transcript = {
   lang: string;
   format: CaptionFormat;
   cues: Cue[];
+  /**
+   * Manual only: whether the cues were re-timed against the ASR track. Absent
+   * on entries cached before re-timing existed, which is how those get
+   * fetched again.
+   */
+  retimed?: boolean;
   /** ISO 8601 — how the cache knows how old this is. */
   fetchedAt: string;
 };
@@ -179,11 +190,14 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const JS_RUNTIME_ARGS = ['--js-runtimes', 'node'];
 const UNKNOWN_OPTION = /no such option|unrecognized arguments|Usage: yt-dlp/i;
 
-function downloadArgs(videoId: string, outputDir: string): string[] {
+/**
+ * `--write-sub --write-auto-sub` is "the manual track, or the ASR one when
+ * there is none". `auto` asks for the ASR track only — the re-timing source.
+ */
+function downloadArgs(videoId: string, outputDir: string, track: 'best' | 'auto' = 'best'): string[] {
   return [
     '--skip-download',
-    '--write-sub',
-    '--write-auto-sub',
+    ...(track === 'best' ? ['--write-sub', '--write-auto-sub'] : ['--write-auto-sub']),
     // One track. A glob asks for three and the third takes a 429.
     '--sub-lang',
     'en',
@@ -223,12 +237,15 @@ export async function fetchTranscript(
   const directory = await mkdtemp(join(tmpdir(), 'pwv-captions-'));
   try {
     const args = downloadArgs(videoId, directory);
+    // Whatever the first download proved this yt-dlp accepts.
+    let runtimeArgs = JS_RUNTIME_ARGS;
     try {
       await run(binary, [...JS_RUNTIME_ARGS, ...args], { timeoutMs });
     } catch (error) {
       if (!(error instanceof CommandFailure)) throw error;
       // An old yt-dlp rejects the flag; anything else is a real failure.
       if (!UNKNOWN_OPTION.test(error.stderr)) throw transcriptError(classifyFailure(error));
+      runtimeArgs = [];
       await run(binary, args, { timeoutMs }).catch((retryError: unknown) => {
         if (retryError instanceof CommandFailure) throw transcriptError(classifyFailure(retryError));
         throw retryError;
@@ -241,21 +258,55 @@ export async function fetchTranscript(
 
     const raw = await readFile(join(directory, files[0]), 'utf8');
     const { cues, format } = parseCaptions(raw);
+    const kind = detectCaptionKind(raw);
 
-    return {
+    const transcript: Transcript = {
       videoId,
-      kind: detectCaptionKind(raw),
+      kind,
       lang: languageFromFilename(files[0]),
       format,
       cues,
       fetchedAt: now().toISOString(),
     };
+    if (kind !== 'manual') return transcript;
+
+    const words = await fetchAsrWords(videoId, join(directory, 'asr'), {
+      run,
+      binary,
+      timeoutMs,
+      runtimeArgs,
+    });
+    return words.length === 0
+      ? { ...transcript, retimed: false }
+      : { ...transcript, cues: retimeCues(cues, words), retimed: true };
   } catch (error) {
     if (error instanceof TranscriptError) throw error;
     // A caption file yt-dlp wrote but we cannot read is still a provider problem.
     throw transcriptError('provider-failed');
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+}
+
+/**
+ * The ASR track's word timings, or `[]` when there is none or it failed.
+ * Best effort by design: it only improves timings the manual track already
+ * has, so no failure here may cost the user their captions.
+ */
+async function fetchAsrWords(
+  videoId: string,
+  directory: string,
+  options: { run: CommandRunner; binary: string; timeoutMs: number; runtimeArgs: string[] },
+): Promise<ReturnType<typeof parseTimedWords>> {
+  try {
+    await mkdir(directory, { recursive: true });
+    await options.run(options.binary, [...options.runtimeArgs, ...downloadArgs(videoId, directory, 'auto')], {
+      timeoutMs: options.timeoutMs,
+    });
+    const file = (await readdir(directory)).find((name) => name.endsWith('.vtt'));
+    return file === undefined ? [] : parseTimedWords(await readFile(join(directory, file), 'utf8'));
+  } catch {
+    return [];
   }
 }
 
@@ -279,6 +330,8 @@ export type CachedFetchOptions = FetchOptions & {
 };
 
 function isFresh(transcript: Transcript, now: Date): boolean {
+  // Cached before re-timing existed: its manual timings are the loose ones.
+  if (transcript.kind === 'manual' && transcript.retimed === undefined) return false;
   const age = now.getTime() - new Date(transcript.fetchedAt).getTime();
   return Number.isFinite(age) && age >= 0 && age < CACHE_TTL_MS;
 }

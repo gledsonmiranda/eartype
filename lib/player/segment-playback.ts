@@ -50,6 +50,13 @@ export const PLAYBACK_DEFAULTS = {
   settleMs: 600,
   /** Measured at +64ms late; correcting it pauses too early. */
   leadMs: 0,
+  /**
+   * Seeking to the exact start mark routinely eats the first word: the seek
+   * itself is not frame-accurate, and whatever settles before playback is
+   * audible costs real audio. Landing a bit earlier spends that slack in the
+   * silence ahead of the word instead of inside it.
+   */
+  startPaddingMs: 200,
   /** Playback has "arrived" once it is within this much of the start mark. */
   arrivalToleranceMs: 250,
   /**
@@ -65,6 +72,7 @@ export type PlaySegmentOptions = {
   pollMs?: number;
   settleMs?: number;
   leadMs?: number;
+  startPaddingMs?: number;
   arrivalToleranceMs?: number;
   arrivalWindowMs?: number;
   timers?: Timers;
@@ -84,6 +92,7 @@ export function playSegment(
   const pollMs = options.pollMs ?? PLAYBACK_DEFAULTS.pollMs;
   const settleMs = options.settleMs ?? PLAYBACK_DEFAULTS.settleMs;
   const leadMs = options.leadMs ?? PLAYBACK_DEFAULTS.leadMs;
+  const startPaddingMs = options.startPaddingMs ?? PLAYBACK_DEFAULTS.startPaddingMs;
   const arrivalToleranceMs = options.arrivalToleranceMs ?? PLAYBACK_DEFAULTS.arrivalToleranceMs;
   const arrivalWindowMs = options.arrivalWindowMs ?? PLAYBACK_DEFAULTS.arrivalWindowMs;
 
@@ -123,7 +132,8 @@ export function playSegment(
     if (nowMs >= segment.endMs - leadMs) finish();
   };
 
-  player.seekTo(segment.startMs / 1000);
+  const seekMs = Math.max(0, segment.startMs - startPaddingMs);
+  player.seekTo(seekMs / 1000);
   player.playVideo();
 
   settleHandle = timers.setTimeout(() => {

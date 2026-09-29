@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
+import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
@@ -65,6 +66,9 @@ export function PracticeScreen({
   const [strict, setStrict] = useState(false);
   // The transcript panel is blurred until each line is earned; this lifts it.
   const [showAll, setShowAll] = useState(false);
+  // POC — the blanks-per-letter hint. On by default while it is being tried;
+  // off brings back the plain field and the live diff underneath it.
+  const [slots, setSlots] = useState(true);
 
   const player = useRef<YouTubePlayer | null>(null);
   const playback = useRef<Playback | null>(null);
@@ -260,22 +264,34 @@ export function PracticeScreen({
           </section>
         ) : (
           <section className="flex flex-col gap-3">
-            <textarea
-              ref={input}
-              value={typed}
-              onChange={(event) => setTyped(event.target.value)}
-              onKeyDown={onKeyDown}
-              rows={2}
-              autoFocus
-              spellCheck={false}
-              autoCorrect="off"
-              autoCapitalize="off"
-              aria-label={`digite o trecho ${session.index + 1} de ${session.total}`}
-              placeholder="digite o que ouviu e aperte Enter"
-              className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 p-3 font-mono text-lg text-zinc-100 outline-none focus:border-zinc-400"
-            />
+            {slots && segment !== undefined ? (
+              <SlotInput
+                ref={input}
+                reference={segment.referenceText}
+                value={typed}
+                mode={mode}
+                onChange={setTyped}
+                onKeyDown={onKeyDown}
+                ariaLabel={`digite o trecho ${session.index + 1} de ${session.total}`}
+              />
+            ) : (
+              <textarea
+                ref={input}
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
+                onKeyDown={onKeyDown}
+                rows={2}
+                autoFocus
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="off"
+                aria-label={`digite o trecho ${session.index + 1} de ${session.total}`}
+                placeholder="digite o que ouviu e aperte Enter"
+                className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 p-3 font-mono text-lg text-zinc-100 outline-none focus:border-zinc-400"
+              />
+            )}
 
-            {result === null && liveTokens.length > 0 && (
+            {!slots && result === null && liveTokens.length > 0 && (
               <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-3">
                 <DiffView tokens={liveTokens} showCorrections={false} ariaLabel="progresso, palavra por palavra" />
               </div>
@@ -337,6 +353,18 @@ export function PracticeScreen({
           </span>
           <span className="flex items-center gap-2">
             {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={slots}
+                onChange={(event) => {
+                  setSlots(event.target.checked);
+                  input.current?.focus();
+                }}
+                className="accent-zinc-300"
+              />
+              dica de letras
+            </label>
             {canBeStrict && (
               <label className="flex items-center gap-1">
                 <input
