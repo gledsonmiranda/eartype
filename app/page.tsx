@@ -22,6 +22,7 @@ export default function Home() {
       captionKind={session.captionKind}
       startIndex={session.startIndex}
       onLeave={() => setSession(null)}
+      libraryCues={session.cues}
     />
   );
 }

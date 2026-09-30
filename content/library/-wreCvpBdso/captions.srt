@@ -1,0 +1,755 @@
+1
+00:00:00,000 --> 00:00:05,560
+Today, AI can write everything for you. That's why you sound exactly like
+
+2
+00:00:05,560 --> 00:00:11,160
+everyone else. And standing apart from others is one of the most valuable
+
+3
+00:00:11,160 --> 00:00:16,840
+things you can do for your career, your relationships, and your future. So, how
+
+4
+00:00:16,840 --> 00:00:23,760
+do you write absurdly well with AI but stop sounding like ChatGPT and still
+
+5
+00:00:23,760 --> 00:00:29,040
+write like a human being? I will share a five-step AI writing system that will
+
+6
+00:00:29,040 --> 00:00:37,160
+make everything you write clearer, more insightful, and unmistakably yours. So,
+
+7
+00:00:37,160 --> 00:00:45,440
+let's start with the story that changed AI forever. Move 37. It was March 2016,
+
+8
+00:00:45,440 --> 00:00:50,240
+and that was the day when one of the strongest human players of a board game
+
+9
+00:00:50,240 --> 00:00:56,560
+called Go was playing against AI. Lee Sedol had held the world championship
+
+10
+00:00:56,560 --> 00:01:03,760
+titles maybe 18 times. And Go is this 3,000-year-old game. It looks very
+
+11
+00:01:03,760 --> 00:01:14,640
+simple. Black stones, white stones, uh 19 by 19 board, but there are roughly 10 to the 170
+
+12
+00:01:14,640 --> 00:01:22,080
+legal board positions. That's more than the number of atoms in the observable universe. Millions of
+
+13
+00:01:22,080 --> 00:01:29,040
+people were watching, and midway through the game at the 37th move, Lee walked
+
+14
+00:01:29,040 --> 00:01:33,320
+out for a break. He wanted to smoke a cigarette and come back.
+
+15
+00:01:33,320 --> 00:01:38,880
+And when he came back, he looked at the board, and he couldn't believe it.
+
+16
+00:01:38,880 --> 00:01:48,520
+AlphaGo had just played a move that looked like complete heresy. That was move 37.
+
+17
+00:01:48,520 --> 00:01:55,760
+And 100 moves later, AI won the game. So, AI can do all of that. Then, why
+
+18
+00:01:55,760 --> 00:02:02,800
+does AI that we use today write in such a predictable generic fashion? When we
+
+19
+00:02:02,800 --> 00:02:07,400
+understand why that happens, we can become better writers, and more
+
+20
+00:02:07,400 --> 00:02:13,080
+importantly, we can become better thinkers. The AI that we use daily, like
+
+21
+00:02:13,080 --> 00:02:22,040
+Claude or Gemini or ChatGPT, are called large language models or LLM. Now, those
+
+22
+00:02:22,040 --> 00:02:28,160
+are built very differently than AlphaGo. So, there's a big gap between what AI
+
+23
+00:02:28,160 --> 00:02:34,720
+generates and what you should generate. And that gap creates five problems in
+
+24
+00:02:34,720 --> 00:02:41,120
+the way we all communicate. So, let's cover those five pitfalls next, and then
+
+25
+00:02:41,120 --> 00:02:45,920
+we'll come up with a five-step system that helps you navigate around those
+
+26
+00:02:45,920 --> 00:02:54,400
+five problems. Problem number one. Confidently drunk. In May of 2024,
+
+27
+00:02:54,400 --> 00:03:02,440
+uh user asked Google, search how to make sure that cheese stays stuck on a pizza.
+
+28
+00:03:02,440 --> 00:03:11,760
+Now, Google's AI overview suggested adding non-toxic glue to the sauce to make it stickier.
+
+29
+00:03:11,760 --> 00:03:20,840
+It's true story. Now, AI understood words from the query. It understood pizza, cheese, sticking,
+
+30
+00:03:20,840 --> 00:03:26,760
+and then it found a joke from Reddit and thought that was the solution.
+
+31
+00:03:26,760 --> 00:03:32,600
+AI hallucinates, and it is so confident while it's doing it. It's like having a
+
+32
+00:03:32,600 --> 00:03:41,360
+conversation with Albert Einstein when he's drunk. He's smart, but he will just make things up,
+
+33
+00:03:41,360 --> 00:03:46,480
+and he won't know that he's doing it. So, that's problem number one. The
+
+34
+00:03:46,480 --> 00:03:53,360
+second problem, a broken record. AI learns patterns from the internet.
+
+35
+00:03:53,360 --> 00:03:58,880
+Right? So, it predicts and remixes those patterns all the time. So, it creates
+
+36
+00:03:58,880 --> 00:04:03,760
+structures that are familiar and comfortable. And it's stuck doing that
+
+37
+00:04:03,760 --> 00:04:09,640
+because, well, that's the key feature. Problem number three, smart and empty.
+
+38
+00:04:09,640 --> 00:04:16,600
+AI is extremely good at producing lines in a shape of an insight.
+
+39
+00:04:16,600 --> 00:04:25,919
+For instance, love without structure is a liability. I don't know what that means. Again,
+
+40
+00:04:25,919 --> 00:04:31,480
+words are fine, and it sounds profound, and it's pretty smart and deep, or at
+
+41
+00:04:31,480 --> 00:04:36,720
+least it sounds like that. But, what did that actually mean? Because the moment
+
+42
+00:04:36,720 --> 00:04:44,720
+you take a closer look at it, it all falls apart. Problem number four, clarity lost in noise.
+
+43
+00:04:44,720 --> 00:04:51,440
+You ask AI to say something simple, and it might come back with some
+
+44
+00:04:51,440 --> 00:04:57,640
+abstraction or jargon. For instance, it will happily create this text.
+
+45
+00:04:57,640 --> 00:05:03,400
+Professional growth requires the intentional strategy and development of
+
+46
+00:05:03,400 --> 00:05:12,200
+capabilities that align with emerging opportunities across an increasingly dynamic career landscape.
+
+47
+00:05:12,200 --> 00:05:19,680
+That's a mouthful. And there is a real idea somewhere in there, but it gets lost in these
+
+48
+00:05:19,680 --> 00:05:27,160
+abstractions that AI generates. If you read it again, the idea is short and simple.
+
+49
+00:05:27,160 --> 00:05:35,480
+Learn things people need. That's it. Problem number five, AI is boring.
+
+50
+00:05:35,480 --> 00:05:40,680
+AI can give you a perfectly good line, but it won't give you any reason to read
+
+51
+00:05:40,680 --> 00:05:50,200
+the next one. AI writing has no tension in it, no intrigue. So, it's all predictable and mostly
+
+52
+00:05:50,200 --> 00:05:57,520
+boring. So, those are the five problems. Of course, the solution is not to stop using AI.
+
+53
+00:05:57,520 --> 00:06:03,240
+That's inevitable nowadays. But, you got to use it in a way that eliminates these
+
+54
+00:06:03,240 --> 00:06:09,960
+shortcomings. That requires a framework. So, let's walk through the five steps of
+
+55
+00:06:09,960 --> 00:06:15,960
+that framework. I'll also share some example prompts you can use for each one
+
+56
+00:06:15,960 --> 00:06:20,720
+of them or at least four of them. Together, they spell the thing you're
+
+57
+00:06:20,720 --> 00:06:26,720
+trying to create, your unique voice. AI gives you an accent, and here's how you
+
+58
+00:06:26,720 --> 00:06:35,680
+get your voice back. So, let's go to the first one. V is for verified. Here, you're fighting the AI
+
+59
+00:06:35,680 --> 00:06:45,160
+hallucinations and asking, "Is this real?" In 2023, a lawyer named Steven Schwartz used
+
+60
+00:06:45,160 --> 00:06:53,120
+ChatGPT to research a legal brief. And of course, ChatGPT gave him cases and
+
+61
+00:06:53,120 --> 00:06:58,840
+citations and quotations and judicial opinions, but there was only one
+
+62
+00:06:58,840 --> 00:07:04,400
+problem. None of those cases existed. When the opposing party's lawyers
+
+63
+00:07:04,400 --> 00:07:10,440
+couldn't find these cases in the real world, Schwartz went back to ChatGPT and
+
+64
+00:07:10,440 --> 00:07:16,320
+asked if these cases were real. ChatGPT assured him they were.
+
+65
+00:07:16,320 --> 00:07:23,200
+So, it's like hallucinations on top of hallucinations. And of course, this is a 3-year-old
+
+66
+00:07:23,200 --> 00:07:29,520
+story, and AI has gotten much better. But, when it comes to numbers and names
+
+67
+00:07:29,520 --> 00:07:35,960
+and data and dates and research, my first instinct still is to verify what
+
+68
+00:07:35,960 --> 00:07:43,160
+AI generates. I look for links. I look for citations. And I ask AI to verify
+
+69
+00:07:43,160 --> 00:07:51,960
+any claim. And the move here is to treat AI like a researcher whose work requires a supervising
+
+70
+00:07:51,960 --> 00:08:00,000
+editor, you. So, for example, here's a prompt. You can give it a draft
+
+71
+00:08:00,000 --> 00:08:06,040
+that you're writing and ask AI to do the following. Extract every factual claim,
+
+72
+00:08:06,040 --> 00:08:13,360
+statistic, data, date, facts, quotes from this draft. Mark each of those
+
+73
+00:08:13,360 --> 00:08:21,200
+items verified, unverified, or disputed. Go out on the internet and find exact
+
+74
+00:08:21,200 --> 00:08:26,480
+links and citations that verify each claim. Give me the strongest primary
+
+75
+00:08:26,480 --> 00:08:31,520
+source for each. Give me a list of claims and their verification links and
+
+76
+00:08:31,520 --> 00:08:37,960
+citations in a bullet form. That's it. And on all three platforms,
+
+77
+00:08:37,960 --> 00:08:43,960
+there are two tricks. One, you can turn the deep research mode on.
+
+78
+00:08:43,960 --> 00:08:50,880
+And AI will give you a plan of how it's going to go out on the internet and what
+
+79
+00:08:50,880 --> 00:08:57,640
+sources will it research. And the second trick, cross-verify. Ask Claude to
+
+80
+00:08:57,640 --> 00:09:04,320
+verify Gemini's work and Gemini to verify ChatGPT's work and so on. And by
+
+81
+00:09:04,320 --> 00:09:11,160
+the way, I talk about these frameworks and systems and go deeper in my weekly newsletter.
+
+82
+00:09:11,160 --> 00:09:16,560
+It's every Tuesday morning. Please subscribe. I love writing it and it's
+
+83
+00:09:16,560 --> 00:09:21,880
+totally free. And now let's go to the second step. O is for owned. In a
+
+84
+00:09:21,880 --> 00:09:29,800
+Cornell University researchers ran an interesting experiment with 118 people,
+
+85
+00:09:29,800 --> 00:09:37,880
+60 in India and 58 in the US. Each person had four writing prompts.
+
+86
+00:09:37,880 --> 00:09:43,960
+Your favorite food, your favorite public figure, your favorite holidays, and so on.
+
+87
+00:09:43,960 --> 00:09:49,320
+Half of them were asked to type it themselves. The other half typed with
+
+88
+00:09:49,320 --> 00:09:56,720
+the assistance of AI suggestions. And by the end, Indians writing with AI
+
+89
+00:09:56,720 --> 00:10:02,680
+were producing more Americanized essays than Indians writing on their own.
+
+90
+00:10:02,680 --> 00:10:09,480
+Indians who used AI, their favorite food was pizza. Their favorite public figure starting
+
+91
+00:10:09,480 --> 00:10:15,480
+with S was Sylvester Stallone, and not Shah Rukh Khan. Their favorite holiday
+
+92
+00:10:15,480 --> 00:10:24,400
+was Christmas. Now, nobody made them do it. But, AI made all of it homogenized, and
+
+93
+00:10:24,400 --> 00:10:32,400
+generic, and ordinary. The familiar. The writers lost their cultural nuance. So, the key question
+
+94
+00:10:32,400 --> 00:10:40,160
+here is does your writing, or any kind of communication, have your fingerprints, your unique touch?
+
+95
+00:10:40,160 --> 00:10:45,680
+What makes you extraordinary? The right move here is to give AI the
+
+96
+00:10:45,680 --> 00:10:50,920
+raw material from your life, because that's your fingerprint. Something that
+
+97
+00:10:50,920 --> 00:10:57,160
+others won't have. So, a prompt would be like, "Do not write anything yet.
+
+98
+00:10:57,160 --> 00:11:03,360
+Interview me about this topic. Ask me one question at a time about what I have
+
+99
+00:11:03,360 --> 00:11:10,320
+personally seen, or done, or believed, or learned, or got wrong. Push back
+
+100
+00:11:10,320 --> 00:11:17,280
+whenever my answer is vague. Stop only when you have five specific details that
+
+101
+00:11:17,280 --> 00:11:24,200
+are relevant to the topic, and have come from me." So, that's all for owned. Now, let's go
+
+102
+00:11:24,200 --> 00:11:30,720
+to the third step, which is I for insightful. Is there actually a so what
+
+103
+00:11:30,720 --> 00:11:34,600
+behind your idea? That's the question you should be asking. Let's say you're
+
+104
+00:11:34,600 --> 00:11:40,560
+making a LinkedIn post and AI comes up with something like "High performers
+
+105
+00:11:40,560 --> 00:11:47,920
+succeed because they extract wisdom from failure." Okay, it sounds fine, but you should ask
+
+106
+00:11:47,920 --> 00:11:55,800
+"Who in the world is arguing that successful people learn nothing from failure?"
+
+107
+00:11:55,800 --> 00:12:01,920
+No one. There's no unique point of view. Everybody knows that failure matters and
+
+108
+00:12:01,920 --> 00:12:07,000
+it teaches you lessons. So what do you do? There are three quick moves that can
+
+109
+00:12:07,000 --> 00:12:12,680
+get you out of this mess. First, bring your own experience. For instance, you
+
+110
+00:12:12,680 --> 00:12:18,920
+could have said "Last week I got hired after 4 months of grueling job search."
+
+111
+00:12:18,920 --> 00:12:24,840
+Those 4 months taught me things that were more valuable than actually getting
+
+112
+00:12:24,840 --> 00:12:30,200
+the offer letter. It's the same message, but there's you in it. There's something
+
+113
+00:12:30,200 --> 00:12:36,640
+unique. Another way to bring something insightful is to go deeper but inside.
+
+114
+00:12:36,640 --> 00:12:43,680
+Before I write anything, I often force myself to finish three sentences.
+
+115
+00:12:43,680 --> 00:12:56,120
+One, most people believe in XYZ and whatever it is. I believe in ABC. And the difference is 1 2 3.
+
+116
+00:12:56,120 --> 00:13:02,320
+Now, you don't always have to look for the counterintuitive insight. Until you
+
+117
+00:13:02,320 --> 00:13:10,680
+find that unique angle, you probably have a topic, but you still don't have an insight. And
+
+118
+00:13:10,680 --> 00:13:17,760
+the third move here is to use AI as your opponent. Lots of people use AI to
+
+119
+00:13:17,760 --> 00:13:24,680
+manufacture an insight, but you should give it your insight and then ask AI to
+
+120
+00:13:24,680 --> 00:13:30,960
+attack it. You could prompt AI like this, "Act as an intelligent skeptic.
+
+121
+00:13:30,960 --> 00:13:34,760
+Here's the point I'm trying to make." And you put your point there.
+
+122
+00:13:34,760 --> 00:13:40,520
+"What would you disagree with and why? Attack my point of view by asking, 'So
+
+123
+00:13:40,520 --> 00:13:48,080
+what?' until you're satisfied." All right. So, the next one is C for clear.
+
+124
+00:13:48,080 --> 00:13:53,400
+Will they understand what you're saying? That's the question to ask. Many years
+
+125
+00:13:53,400 --> 00:14:02,440
+ago, I was at a company where I was reporting to the CEO. And he and I were sitting there during
+
+126
+00:14:02,440 --> 00:14:11,160
+my um annual review. And he was such a thoughtful leader with a very high EQ.
+
+127
+00:14:11,160 --> 00:14:16,800
+He had a PhD in economics, brilliant brilliant guy. And he gave me the most
+
+128
+00:14:16,800 --> 00:14:27,120
+useful feedback I've ever received. He said, "Sandeep, you have this habit of hiding behind
+
+129
+00:14:27,120 --> 00:14:38,680
+your humor. You deflect. You use sarcasm instead of candor. It's going to make people unsure of who
+
+130
+00:14:38,680 --> 00:14:49,680
+you are and whether they can trust you." E- Even right now, as I remember that moment, I
+
+131
+00:14:49,680 --> 00:14:57,080
+I mean, I can feel the weight of those words because they hit me like a ton of bricks.
+
+132
+00:14:57,080 --> 00:15:06,080
+I had no idea. I thought I was being warm and and funny and non-confrontational, but
+
+133
+00:15:06,080 --> 00:15:12,680
+what was being seen by others was completely different. You're the last
+
+134
+00:15:12,680 --> 00:15:17,320
+one who can judge your own mode of communication and how it gets
+
+135
+00:15:17,320 --> 00:15:22,520
+interpreted by others is not in your control. So, if you're trying to create
+
+136
+00:15:22,520 --> 00:15:28,360
+more clarity in today's noise-infested world, here are the three moves you can
+
+137
+00:15:28,360 --> 00:15:36,160
+make. First, try to say it out loud when you trying to write. Speaking is faster than writing, so
+
+138
+00:15:36,160 --> 00:15:41,200
+you'll reach for simpler words that you know instead of the words that sound
+
+139
+00:15:41,200 --> 00:15:46,440
+impressive when you write. Once you say the sentence out loud, then just write
+
+140
+00:15:46,440 --> 00:15:53,800
+down exactly what you said. You'll see that it'll keep your writing style very conversational.
+
+141
+00:15:53,800 --> 00:16:00,000
+Second, sleep on it. It's always good to come back to it the next day
+
+142
+00:16:00,000 --> 00:16:05,920
+because a day later, you've forgotten what you meant. So, you read what's
+
+143
+00:16:05,920 --> 00:16:13,640
+actually there. You'll see if it's clear. And finally, for important documents,
+
+144
+00:16:13,640 --> 00:16:18,400
+have another person read it. Now, you may not have this luxury all
+
+145
+00:16:18,400 --> 00:16:25,440
+the time, but having a true independent review for at least important documents
+
+146
+00:16:25,440 --> 00:16:32,760
+can be extremely helpful. Worst-case scenario, use AI as your editor. Here's the prompt
+
+147
+00:16:32,760 --> 00:16:40,160
+for it. Act as my editor. First, tell me what I said in your own simple words as
+
+148
+00:16:40,160 --> 00:16:46,120
+if you were explaining it to someone who is 9 years old. Second, mark every
+
+149
+00:16:46,120 --> 00:16:52,080
+sentence where the reader may have to guess my meaning. And third, tell me
+
+150
+00:16:52,080 --> 00:16:57,000
+where there's room to improve my clarity. Clarity matters with people,
+
+151
+00:16:57,000 --> 00:17:00,880
+but it matters even more when you're talking to AI. That's where our sponsor
+
+152
+00:17:00,880 --> 00:17:05,520
+comes in. This portion of the video is sponsored by Hostinger. Let's say you
+
+153
+00:17:05,520 --> 00:17:10,079
+want to build a personal career website or a website for your creative or
+
+154
+00:17:10,079 --> 00:17:14,199
+coaching business. Today, it's gotten ridiculously easy to build it. Set up
+
+155
+00:17:14,199 --> 00:17:18,400
+your hosting and domain account on Hostinger and then connect it to your
+
+156
+00:17:18,400 --> 00:17:22,439
+AI. For instance, Claude code. If you type this one-line command in Claude
+
+157
+00:17:22,439 --> 00:17:26,599
+code, it'll install the connector, restart your session, and the plugin is
+
+158
+00:17:26,599 --> 00:17:31,120
+right there. Simple as that. From here on, you build your site in plain
+
+159
+00:17:31,120 --> 00:17:36,120
+English. Build me a clean personal website that features my bio, my
+
+160
+00:17:36,120 --> 00:17:41,840
+projects, my experience, and a contact page. Oh, make sure it looks great on
+
+161
+00:17:41,840 --> 00:17:47,600
+mobile. That's it. Claude will build a site, Hostinger will get it live on your
+
+162
+00:17:47,600 --> 00:17:53,280
+domain. All you have to do is give clear instructions. That's the power of
+
+163
+00:17:53,280 --> 00:17:58,480
+clarity. Check out the Hostinger link below and use the code clarity26 to get
+
+164
+00:17:58,480 --> 00:18:06,160
+10% off. Now, finally, the fifth step, E for engaging. Now, this is the hardest
+
+165
+00:18:06,160 --> 00:18:13,680
+because you have to ask yourself, is the next line needed at all? Steve Jobs had
+
+166
+00:18:13,680 --> 00:18:19,400
+a phrase, "Oh, and one more thing." And he would just casually say that, but the
+
+167
+00:18:19,400 --> 00:18:24,960
+audience waited for it because his "Oh, one more thing" was the most important
+
+168
+00:18:24,960 --> 00:18:30,600
+thing of his presentation. And that's what made him an engaging storyteller.
+
+169
+00:18:30,600 --> 00:18:42,040
+Now, we mostly focus on whether our line is good or bad. We rarely ask the more potent question,
+
+170
+00:18:42,040 --> 00:18:48,760
+"Will this line leave someone wanting the next one?" And the problem is AI
+
+171
+00:18:48,760 --> 00:18:56,360
+loves fillers. It'll give you lines, it'll give you paragraphs, but it's your job as the writer to
+
+172
+00:18:56,360 --> 00:19:04,000
+create a story, to create something at stake. Unfortunately, for this one, there is no
+
+173
+00:19:04,000 --> 00:19:10,080
+prompt that can help any of us. For this one, you're on your own because this one is
+
+174
+00:19:10,080 --> 00:19:18,000
+all about your own taste and your judgement because this is the part that's entirely human
+
+175
+00:19:18,000 --> 00:19:29,360
+and entirely yours. So, that's voice verified, owned, insightful, clear, and engaging. Also,
+
+176
+00:19:29,360 --> 00:19:33,840
+you can take us with you on the go nowadays. These podcasts are available
+
+177
+00:19:33,840 --> 00:19:38,760
+in audio and video on Spotify now. That's pretty cool. We started this
+
+178
+00:19:38,760 --> 00:19:48,600
+video with a story of move 37. People in the AI world talk about that move a lot,
+
+179
+00:19:48,600 --> 00:19:55,760
+but they rarely talk about something more interesting, move 78 in game four.
+
+180
+00:19:55,760 --> 00:20:02,040
+What happened in game four was Lee was already three games behind. He had lost
+
+181
+00:20:02,040 --> 00:20:07,560
+three games, but in game four, he did something unconventional.
+
+182
+00:20:07,560 --> 00:20:18,280
+Millions who watching didn't understand it at first. AlphaGo responded, but Lee won that game. Move
+
+183
+00:20:18,280 --> 00:20:28,640
+was the machine surprising humans. Move 78 was a human surprising the machine. Writing
+
+184
+00:20:28,640 --> 00:20:40,080
+is also about taking similar chances, about you taking a surprising turn and arriving somewhere new.
+
+185
+00:20:40,080 --> 00:20:48,440
+Because you don't write just to find words, you write to find out what you think.
+
+186
+00:20:48,440 --> 00:20:57,120
+Writing is one of the best ways you meet your own mind. It's the best mirror you can have.
+
+187
+00:20:57,120 --> 00:21:07,280
+That's why people journal. It allows them to reflect, literally. Content is infinite now.
+
+188
+00:21:07,280 --> 00:21:16,160
+Anyone can produce words, but do you have something to say? Because when you write that,
+
+189
+00:21:16,160 --> 00:21:23,680
+you'll get to learn something about yourself. Thank you, and I love you.

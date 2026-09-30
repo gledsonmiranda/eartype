@@ -1,0 +1,7 @@
+1
+00:00:01,000 --> 00:00:03,000
+Hello there, how are you doing today?
+
+2
+00:00:03,500 --> 00:00:06,000
+I am doing fine, thank you very much.

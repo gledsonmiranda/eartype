@@ -8,6 +8,7 @@
  * this screen from the start, and every failure points at it.
  */
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
 import { segment as segmentCues } from '@/lib/captions/segmenter';
@@ -19,6 +20,8 @@ export type StartRequest = {
   segments: Segment[];
   captionKind: CaptionKind;
   startIndex: number;
+  /** The cues the segments were built from — what "add to library" saves. */
+  cues: Cue[];
 };
 
 export type EntryScreenProps = {
@@ -66,6 +69,7 @@ export function EntryScreen({ onStart }: EntryScreenProps) {
       segments,
       captionKind,
       startIndex: indexForTime(segments, video.startSec),
+      cues,
     });
   };
 
@@ -129,7 +133,12 @@ export function EntryScreen({ onStart }: EntryScreenProps) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">Eartype</h1>
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="text-2xl font-semibold">Eartype</h1>
+          <Link href="/library" className="text-sm text-zinc-300 underline underline-offset-4">
+            biblioteca de vídeos →
+          </Link>
+        </div>
         <p className="text-sm text-zinc-400">
           Cole a URL de um vídeo do YouTube. O vídeo toca em trechos curtos, pausa, e você digita o
           que ouviu.

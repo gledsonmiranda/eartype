@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AddToLibrary } from '@/app/components/AddToLibrary';
 import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
 import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
@@ -31,7 +32,7 @@ import {
   tally,
   type Session,
 } from '@/lib/practice/session';
-import type { CaptionKind, CorrectionMode, DiffResult, Segment } from '@/types';
+import type { CaptionKind, CorrectionMode, Cue, DiffResult, Segment } from '@/types';
 
 /**
  * §RF-05 — a clean answer moves on by itself. 700ms turned out to be too fast
@@ -46,6 +47,11 @@ export type PracticeScreenProps = {
   captionKind: CaptionKind;
   startIndex?: number;
   onLeave: () => void;
+  /**
+   * The captions this session came from, when it did not come from the
+   * library — what "add to library" saves. Absent: no button.
+   */
+  libraryCues?: Cue[];
 };
 
 export function PracticeScreen({
@@ -54,6 +60,7 @@ export function PracticeScreen({
   captionKind,
   startIndex = 0,
   onLeave,
+  libraryCues,
 }: PracticeScreenProps) {
   const [session, setSession] = useState<Session>(() => startSession(segments.length, startIndex));
   const [typed, setTyped] = useState('');
@@ -342,41 +349,48 @@ export function PracticeScreen({
           </section>
         )}
 
-        <footer className="flex items-center justify-between border-t border-zinc-800 pt-3 text-xs text-zinc-400">
-          <span>
-            trecho {Math.min(session.index + 1, session.total)} de {session.total}
-            {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
-          </span>
-          <span className="hidden sm:inline">
-            Enter verifica · Ctrl+Enter repete · Ctrl+Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
-            navega
-          </span>
-          <span className="flex items-center gap-2">
-            {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={slots}
-                onChange={(event) => {
-                  setSlots(event.target.checked);
-                  input.current?.focus();
-                }}
-                className="accent-zinc-300"
-              />
-              dica de letras
-            </label>
-            {canBeStrict && (
-              <label className="flex items-center gap-1">
+        <footer className="flex flex-col gap-2 border-t border-zinc-800 pt-3 text-xs text-zinc-400">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <span className="whitespace-nowrap">
+              trecho {Math.min(session.index + 1, session.total)} de {session.total}
+              {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
+            </span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="whitespace-nowrap">
+                {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}
+              </span>
+              <label className="flex items-center gap-1.5 whitespace-nowrap">
                 <input
                   type="checkbox"
-                  checked={strict}
-                  onChange={(event) => setStrict(event.target.checked)}
+                  checked={slots}
+                  onChange={(event) => {
+                    setSlots(event.target.checked);
+                    input.current?.focus();
+                  }}
                   className="accent-zinc-300"
                 />
-                modo estrito
+                dica de letras
               </label>
-            )}
-          </span>
+              {canBeStrict && (
+                <label className="flex items-center gap-1.5 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={strict}
+                    onChange={(event) => setStrict(event.target.checked)}
+                    className="accent-zinc-300"
+                  />
+                  modo estrito
+                </label>
+              )}
+              {libraryCues !== undefined && (
+                <AddToLibrary videoId={videoId} captionKind={captionKind} cues={libraryCues} />
+              )}
+            </div>
+          </div>
+          <p className="hidden text-zinc-500 sm:block">
+            Enter verifica · Ctrl+Enter repete · Ctrl+Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
+            navega
+          </p>
         </footer>
       </div>
 
