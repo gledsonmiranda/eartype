@@ -39,7 +39,7 @@ export function AddToLibrary({ videoId, captionKind, cues }: AddToLibraryProps) 
 
   if (done) {
     return (
-      <Link href="/library" className="whitespace-nowrap text-emerald-300 underline underline-offset-4">
+      <Link href="/" className="whitespace-nowrap text-ok underline underline-offset-4">
         na biblioteca ✓
       </Link>
     );
@@ -59,11 +59,11 @@ export function AddToLibrary({ videoId, captionKind, cues }: AddToLibraryProps) 
         type="button"
         onClick={save}
         disabled={pending}
-        className="rounded-full border border-zinc-700 px-2.5 py-0.5 whitespace-nowrap text-zinc-300 hover:border-zinc-400 hover:text-zinc-100 disabled:opacity-40"
+        className="rounded-sm border border-line px-2.5 py-1 whitespace-nowrap text-fg hover:border-line-strong disabled:opacity-40"
       >
         {pending ? 'salvando…' : status.saved ? 'atualizar na biblioteca' : 'adicionar à biblioteca'}
       </button>
-      {error !== null && <span className="text-amber-200">{error}</span>}
+      {error !== null && <span className="text-warn">{error}</span>}
     </span>
   );
 }

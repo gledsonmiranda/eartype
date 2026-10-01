@@ -1,18 +1,30 @@
 @import "tailwindcss";
 
-/* Neutral grey for now: the palette is a pendency of §8 of the spec. */
-:root {
-  --background: #0f0f10;
-  --foreground: #e8e8ea;
-}
-
+/* Studio palette: ink-blue ground, one periwinkle accent. Correct / typo /
+   wrong also differ by underline shape, never by hue alone (§8). */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-bg: #0e1116;
+  --color-surface: #151a21;
+  --color-raised: #1c222b;
+  --color-sidebar: #11151b;
+  --color-line: #2a313c;
+  --color-line-soft: #222934;
+  --color-line-strong: #3a4352;
+  --color-fg: #e8ebf1;
+  --color-muted: #9aa3b2;
+  --color-dim: #7c8596;
+  --color-accent: #a5b4ff;
+  --color-ok: #5fd3a8;
+  --color-warn: #f2b84b;
+  --color-bad: #ff7d72;
+
+  --font-sans: var(--font-instrument), system-ui, sans-serif;
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
 }

@@ -8,10 +8,12 @@ export function LibraryPractice({
   videoId,
   segments,
   captionKind,
+  title,
 }: {
   videoId: string;
   segments: Segment[];
   captionKind: CaptionKind;
+  title?: string;
 }) {
   const router = useRouter();
 
@@ -20,7 +22,8 @@ export function LibraryPractice({
       videoId={videoId}
       segments={segments}
       captionKind={captionKind}
-      onLeave={() => router.push('/library')}
+      title={title}
+      onLeave={() => router.push('/')}
     />
   );
 }

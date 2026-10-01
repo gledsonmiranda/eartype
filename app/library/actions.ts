@@ -68,7 +68,7 @@ export async function addToLibrary(input: {
     return { ok: false, message: 'não consegui salvar na biblioteca' };
   }
 
-  revalidatePath('/library');
+  revalidatePath('/');
   return { ok: true };
 }
 
@@ -82,7 +82,7 @@ export async function removeFromLibrary(videoId: string): Promise<LibraryActionR
     return { ok: false, message: 'não consegui remover da biblioteca' };
   }
 
-  revalidatePath('/library');
+  revalidatePath('/');
   return { ok: true };
 }
 

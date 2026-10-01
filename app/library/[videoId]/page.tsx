@@ -27,6 +27,11 @@ export default async function LibraryVideoPage({ params }: PageProps<'/library/[
   if (segments.length === 0) notFound();
 
   return (
-    <LibraryPractice videoId={videoId} segments={segments} captionKind={video.entry.kind} />
+    <LibraryPractice
+      videoId={videoId}
+      segments={segments}
+      captionKind={video.entry.kind}
+      title={video.entry.title}
+    />
   );
 }

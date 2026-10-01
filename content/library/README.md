@@ -1,11 +1,11 @@
 # Biblioteca de vídeos
 
-Vídeos cuja legenda já vem no projeto: aparecem em `/library` e abrem direto na
+Vídeos cuja legenda já vem no projeto: aparecem na página inicial e abrem direto na
 prática, sem yt-dlp.
 
 ## Adicionar um vídeo
 
-Pelo app (rodando local): pratique o vídeo pela URL e clique em
+Pelo app (rodando local): em "Vídeo novo", cole a URL, arraste o .srt, comece e clique em
 **adicionar à biblioteca**. Depois é só commitar a pasta criada.
 
 À mão:

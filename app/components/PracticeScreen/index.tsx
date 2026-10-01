@@ -52,6 +52,8 @@ export type PracticeScreenProps = {
    * library — what "add to library" saves. Absent: no button.
    */
   libraryCues?: Cue[];
+  /** Shown in the header when known (library videos). */
+  title?: string;
 };
 
 export function PracticeScreen({
@@ -61,6 +63,7 @@ export function PracticeScreen({
   startIndex = 0,
   onLeave,
   libraryCues,
+  title,
 }: PracticeScreenProps) {
   const [session, setSession] = useState<Session>(() => startSession(segments.length, startIndex));
   const [typed, setTyped] = useState('');
@@ -223,197 +226,318 @@ export function PracticeScreen({
 
   const counts = tally(session);
   const done = isFinished(session);
+  const answered = session.total - counts.pending;
+  const percent = session.total === 0 ? 0 : Math.round((answered / session.total) * 100);
 
   return (
-    <main className="mx-auto grid w-full max-w-[1400px] gap-4 p-4 lg:h-screen lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-[minmax(0,1fr)]">
-      <div className="flex min-h-0 flex-col gap-4">
-        <section>
-          <VideoPlayer
-            videoId={videoId}
-            onReady={(created) => {
-              player.current = created;
-              setReady(true);
-            }}
-            onError={setPlayerError}
-          />
-        </section>
-
-        {playerError !== null && (
-          <p className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
-            {PLAYER_ERROR_MESSAGES[playerError]} —{' '}
-            <a
-              className="underline"
-              href={`https://www.youtube.com/watch?v=${videoId}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              abrir no YouTube
-            </a>
-          </p>
+    <div className="flex min-h-screen flex-col lg:h-screen">
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line-soft px-4 py-2 sm:px-8 lg:h-16 lg:py-0">
+        <button
+          type="button"
+          onClick={onLeave}
+          className="flex min-h-11 items-center gap-2 text-[15px] text-muted hover:text-fg"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+          Biblioteca
+        </button>
+        {title !== undefined && (
+          <h1 className="min-w-0 truncate font-display text-[17px] font-bold">{title}</h1>
         )}
+        <div className="flex min-w-48 flex-1 items-center gap-3">
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={session.total}
+            aria-valuenow={answered}
+            aria-label="progresso do vídeo"
+            className="h-1.5 flex-1 overflow-hidden rounded-sm bg-line"
+          >
+            <div className="h-full bg-accent" style={{ width: `${percent}%` }} />
+          </div>
+          <span className="font-mono text-[13px] whitespace-nowrap text-muted">
+            {Math.min(session.index + 1, session.total)} / {session.total}
+          </span>
+        </div>
+        <label className="flex min-h-11 items-center gap-2 text-sm whitespace-nowrap">
+          <input
+            type="checkbox"
+            checked={slots}
+            onChange={(event) => {
+              setSlots(event.target.checked);
+              input.current?.focus();
+            }}
+            className="size-4 accent-accent"
+          />
+          Dica de letras
+        </label>
+        {canBeStrict && (
+          <label className="flex min-h-11 items-center gap-2 text-sm whitespace-nowrap text-muted">
+            <input
+              type="checkbox"
+              checked={strict}
+              onChange={(event) => setStrict(event.target.checked)}
+              className="size-4 accent-accent"
+            />
+            Modo estrito
+          </label>
+        )}
+      </header>
 
-        {done ? (
-          <section className="flex flex-col gap-3 rounded-lg border border-zinc-700 p-6">
-            <h2 className="text-lg font-semibold">Fim do vídeo</h2>
-            <p className="text-sm text-zinc-300">
-              {counts.correct} de {session.total} de primeira · {counts.accepted} aceitos com erro ·{' '}
-              {counts.skipped} revelados
-            </p>
-            <div>
-              <button
-                type="button"
-                onClick={onLeave}
-                className="rounded-full bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-900"
-              >
-                Praticar outro vídeo
-              </button>
-            </div>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <main className="flex min-h-0 flex-col gap-8 overflow-y-auto p-4 sm:p-8">
+          <section className="mx-auto w-full max-w-[720px]">
+            <VideoPlayer
+              videoId={videoId}
+              onReady={(created) => {
+                player.current = created;
+                setReady(true);
+              }}
+              onError={setPlayerError}
+            />
           </section>
-        ) : (
-          <section className="flex flex-col gap-3">
-            {slots && segment !== undefined ? (
-              <SlotInput
-                ref={input}
-                reference={segment.referenceText}
-                value={typed}
-                mode={mode}
-                onChange={setTyped}
-                onKeyDown={onKeyDown}
-                ariaLabel={`digite o trecho ${session.index + 1} de ${session.total}`}
-              />
-            ) : (
-              <textarea
-                ref={input}
-                value={typed}
-                onChange={(event) => setTyped(event.target.value)}
-                onKeyDown={onKeyDown}
-                rows={2}
-                autoFocus
-                spellCheck={false}
-                autoCorrect="off"
-                autoCapitalize="off"
-                aria-label={`digite o trecho ${session.index + 1} de ${session.total}`}
-                placeholder="digite o que ouviu e aperte Enter"
-                className="w-full resize-none rounded-md border border-zinc-700 bg-zinc-900 p-3 font-mono text-lg text-zinc-100 outline-none focus:border-zinc-400"
-              />
-            )}
 
-            {!slots && result === null && liveTokens.length > 0 && (
-              <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-3">
-                <DiffView tokens={liveTokens} showCorrections={false} ariaLabel="progresso, palavra por palavra" />
-              </div>
-            )}
-
-            {result !== null && (
-              <div
-                className={`flex flex-col gap-2 rounded-md border p-3 ${
-                  isPerfect(result)
-                    ? 'border-emerald-500/50 bg-emerald-500/10'
-                    : 'border-zinc-700 bg-zinc-900/60'
-                }`}
+          {playerError !== null && (
+            <p className="mx-auto w-full max-w-[720px] rounded-sm border border-bad/40 bg-bad/10 p-3 text-sm text-bad">
+              {PLAYER_ERROR_MESSAGES[playerError]} —{' '}
+              <a
+                className="underline"
+                href={`https://www.youtube.com/watch?v=${videoId}`}
+                target="_blank"
+                rel="noreferrer"
               >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs tracking-wide uppercase ${
-                      isPerfect(result) ? 'font-semibold text-emerald-300' : 'text-zinc-400'
-                    }`}
-                  >
-                    {isPerfect(result) ? '✓ acertou' : 'correção'}
-                  </span>
+                abrir no YouTube
+              </a>
+            </p>
+          )}
+
+          {done ? (
+            <section className="mx-auto flex w-full max-w-[720px] flex-col gap-4 rounded-md border border-line bg-surface p-8">
+              <h2 className="font-display text-2xl font-bold">Fim do vídeo</h2>
+              <p className="text-sm text-muted">
+                {counts.correct} de {session.total} de primeira · {counts.accepted} aceitos com erro ·{' '}
+                {counts.skipped} revelados
+              </p>
+              <div>
+                <button
+                  type="button"
+                  onClick={onLeave}
+                  className="h-11 rounded-sm bg-accent px-6 text-[15px] font-semibold text-bg"
+                >
+                  Praticar outro vídeo
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="mx-auto flex w-full max-w-[720px] flex-col gap-5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">
+                  {result !== null
+                    ? isPerfect(result)
+                      ? '✓ acertou'
+                      : `Correção · trecho ${session.index + 1}`
+                    : `Ouça e digite · trecho ${session.index + 1}`}
+                </span>
+                {result !== null ? (
                   <AccuracyBadge accuracy={result.accuracy} />
-                </div>
-                <DiffView result={result} />
-                {!isPerfect(result) && (
-                  <p className="font-mono text-sm text-zinc-400">{segment?.referenceText}</p>
+                ) : (
+                  <Action onClick={play} keys="Ctrl ↵">
+                    Repetir
+                  </Action>
                 )}
               </div>
-            )}
 
-            {revealed && segment !== undefined && (
-              <p className="rounded-md border border-zinc-700 bg-zinc-900/60 p-3 font-mono text-lg text-zinc-200">
-                {segment.referenceText}
-              </p>
-            )}
+              {result === null && (
+                <div className="rounded-md border border-line bg-surface px-8 py-6">
+                  {slots && segment !== undefined ? (
+                    <SlotInput
+                      ref={input}
+                      reference={segment.referenceText}
+                      value={typed}
+                      mode={mode}
+                      onChange={setTyped}
+                      onKeyDown={onKeyDown}
+                      ariaLabel={`digite o trecho ${session.index + 1} de ${session.total}`}
+                    />
+                  ) : (
+                    <textarea
+                      ref={input}
+                      value={typed}
+                      onChange={(event) => setTyped(event.target.value)}
+                      onKeyDown={onKeyDown}
+                      rows={2}
+                      autoFocus
+                      spellCheck={false}
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      aria-label={`digite o trecho ${session.index + 1} de ${session.total}`}
+                      placeholder="digite o que ouviu e aperte Enter"
+                      className="w-full resize-none rounded-sm border border-line bg-bg p-3 font-mono text-xl text-fg outline-none focus:border-accent"
+                    />
+                  )}
+                  {!slots && liveTokens.length > 0 && (
+                    <div className="mt-3 border-t border-line-soft pt-3">
+                      <DiffView tokens={liveTokens} showCorrections={false} ariaLabel="progresso, palavra por palavra" />
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Action onClick={play}>repetir · Ctrl+Enter</Action>
-              {result !== null && !isPerfect(result) && (
-                <>
-                  <Action onClick={retry}>tentar de novo</Action>
-                  <Action onClick={acceptAndMoveOn}>aceitar e seguir · Enter</Action>
-                </>
+              {result !== null && (
+                <div
+                  className={`flex flex-col gap-5 rounded-md border p-8 ${
+                    isPerfect(result) ? 'border-ok/50 bg-ok/10' : 'border-line bg-surface'
+                  }`}
+                >
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs tracking-[0.08em] text-muted uppercase">Você digitou</span>
+                    <DiffView result={result} />
+                  </div>
+                  {!isPerfect(result) && (
+                    <>
+                      <div className="h-px bg-line" />
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs tracking-[0.08em] text-muted uppercase">Era</span>
+                        <p className="font-mono text-xl leading-relaxed text-fg">{segment?.referenceText}</p>
+                      </div>
+                      <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[13px] text-muted">
+                        <li className="flex items-center gap-2"><span className="w-3.5 border-t-[3px] border-ok" />certa</li>
+                        <li className="flex items-center gap-2"><span className="w-3.5 border-t-[3px] border-dotted border-warn" />quase (digitação)</li>
+                        <li className="flex items-center gap-2"><span className="w-3.5 border-t-[3px] border-bad" />errada</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
               )}
-              {result === null && !revealed && <Action onClick={reveal}>revelar · Ctrl+→</Action>}
-              {revealed && <Action onClick={acceptAndMoveOn}>próximo · Enter</Action>}
-            </div>
-          </section>
-        )}
 
-        <footer className="flex flex-col gap-2 border-t border-zinc-800 pt-3 text-xs text-zinc-400">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <span className="whitespace-nowrap">
-              trecho {Math.min(session.index + 1, session.total)} de {session.total}
-              {session.attempts > 0 && ` · ${session.attempts} tentativa(s)`}
-            </span>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="whitespace-nowrap">
-                {captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}
-              </span>
-              <label className="flex items-center gap-1.5 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={slots}
-                  onChange={(event) => {
-                    setSlots(event.target.checked);
-                    input.current?.focus();
-                  }}
-                  className="accent-zinc-300"
-                />
-                dica de letras
-              </label>
-              {canBeStrict && (
-                <label className="flex items-center gap-1.5 whitespace-nowrap">
-                  <input
-                    type="checkbox"
-                    checked={strict}
-                    onChange={(event) => setStrict(event.target.checked)}
-                    className="accent-zinc-300"
-                  />
-                  modo estrito
-                </label>
+              {revealed && segment !== undefined && (
+                <p className="rounded-md border border-line bg-surface p-6 font-mono text-xl text-fg">
+                  {segment.referenceText}
+                </p>
               )}
-              {libraryCues !== undefined && (
-                <AddToLibrary videoId={videoId} captionKind={captionKind} cues={libraryCues} />
-              )}
-            </div>
-          </div>
-          <p className="hidden text-zinc-500 sm:block">
-            Enter verifica · Ctrl+Enter repete · Ctrl+Espaço pausa/retoma · Ctrl+→ revela · Alt+←/→
-            navega
-          </p>
-        </footer>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm text-muted">
+                  {result === null && !revealed
+                    ? 'Cada traço é uma letra. Pontuação é opcional.'
+                    : session.attempts > 0
+                      ? `${session.attempts} tentativa(s)`
+                      : ''}
+                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  {result !== null && !isPerfect(result) && (
+                    <>
+                      <Action onClick={retry}>Tentar de novo</Action>
+                      <Primary onClick={acceptAndMoveOn} keys="↵">
+                        Aceitar e seguir
+                      </Primary>
+                    </>
+                  )}
+                  {result === null && !revealed && (
+                    <>
+                      <Action onClick={reveal} keys="Ctrl →" quiet>
+                        Revelar
+                      </Action>
+                      <Primary onClick={check} keys="↵">
+                        Verificar
+                      </Primary>
+                    </>
+                  )}
+                  {revealed && (
+                    <Primary onClick={acceptAndMoveOn} keys="↵">
+                      Próximo
+                    </Primary>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+                <span>{captionKind === 'manual' ? 'legenda manual' : 'legenda auto-gerada'}</span>
+                {libraryCues !== undefined && (
+                  <AddToLibrary videoId={videoId} captionKind={captionKind} cues={libraryCues} />
+                )}
+              </div>
+            </section>
+          )}
+        </main>
+
+        <TranscriptPanel
+          segments={segments}
+          outcomes={session.outcomes}
+          currentIndex={session.index}
+          showAll={showAll}
+          onToggleShowAll={() => setShowAll((current) => !current)}
+          onSelect={(index) => moveWith((current) => goToSegment(current, index))}
+        />
       </div>
 
-      <TranscriptPanel
-        segments={segments}
-        outcomes={session.outcomes}
-        currentIndex={session.index}
-        showAll={showAll}
-        onToggleShowAll={() => setShowAll((current) => !current)}
-        onSelect={(index) => moveWith((current) => goToSegment(current, index))}
-      />
-    </main>
+      <footer className="hidden items-center justify-center gap-7 border-t border-line-soft py-4 text-[13px] text-muted sm:flex">
+        <Key keys="↵">verifica</Key>
+        <Key keys="Ctrl ↵">repete</Key>
+        <Key keys="Ctrl Espaço">pausa</Key>
+        <Key keys="Ctrl →">revela</Key>
+        <Key keys="Alt ← →">navega</Key>
+      </footer>
+    </div>
   );
 }
 
-function Action({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function Key({ keys, children }: { keys: string; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-2">
+      <kbd className="rounded-[3px] border border-line-strong px-2 py-0.5 font-mono text-xs text-fg">
+        {keys}
+      </kbd>
+      {children}
+    </span>
+  );
+}
+
+function Action({
+  onClick,
+  children,
+  keys,
+  quiet = false,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  keys?: string;
+  quiet?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border border-zinc-600 px-3 py-1 text-zinc-200 hover:border-zinc-400"
+      className={`flex h-11 items-center gap-2 rounded-sm px-4 text-sm ${
+        quiet
+          ? 'text-muted hover:text-fg'
+          : 'border border-line bg-surface text-fg hover:border-line-strong'
+      }`}
     >
       {children}
+      {keys !== undefined && <span className="font-mono text-xs text-muted">{keys}</span>}
+    </button>
+  );
+}
+
+function Primary({
+  onClick,
+  children,
+  keys,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+  keys: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-11 items-center gap-2 rounded-sm bg-accent px-6 text-[15px] font-semibold text-bg hover:brightness-110"
+    >
+      {children}
+      <span className="font-mono text-xs opacity-70">{keys}</span>
     </button>
   );
 }

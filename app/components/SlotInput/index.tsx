@@ -27,25 +27,25 @@ export type SlotInputProps = {
 };
 
 const DONE: Record<TokenStatus, string> = {
-  correct: 'text-emerald-300',
-  typo: 'text-amber-300 underline decoration-dotted decoration-2 underline-offset-8',
-  wrong: 'text-red-300 line-through decoration-2',
-  missing: 'text-zinc-400',
-  extra: 'text-zinc-500 line-through decoration-2',
+  correct: 'text-ok',
+  typo: 'text-warn underline decoration-dotted decoration-2 underline-offset-8',
+  wrong: 'text-bad line-through decoration-2',
+  missing: 'text-muted',
+  extra: 'text-dim line-through decoration-2',
 };
 
 const SLOT: Record<Slot['kind'], string> = {
   typed: '',
-  empty: 'text-zinc-600',
-  fixed: 'text-zinc-500',
-  overflow: 'text-red-300/80',
+  empty: 'text-line-strong',
+  fixed: 'text-dim',
+  overflow: 'text-bad/80',
 };
 
 /** A zero-width flex item, stretched to the line so the bar spans the glyphs. */
 function Caret() {
   return (
     <span className="relative w-0 self-stretch">
-      <span className="absolute inset-y-1 -left-px w-0.5 animate-pulse bg-zinc-100" />
+      <span className="absolute inset-y-1 -left-px w-0.5 animate-pulse bg-accent" />
     </span>
   );
 }
@@ -55,8 +55,8 @@ function Word({ word, focused }: { word: WordSlots; focused: boolean }) {
     word.state === 'done' && word.status !== undefined
       ? DONE[word.status]
       : word.state === 'current'
-        ? 'text-zinc-100'
-        : 'text-zinc-300';
+        ? 'text-fg'
+        : 'text-fg/80';
 
   // The caret sits on the first blank, or after the last letter when full.
   const firstEmpty = word.slots.findIndex((slot) => slot.kind === 'empty');

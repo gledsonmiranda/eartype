@@ -9,11 +9,11 @@
 import type { DiffResult, DiffToken, TokenStatus } from '@/types';
 
 const STYLES: Record<TokenStatus, string> = {
-  correct: 'text-emerald-300',
-  typo: 'text-amber-300 underline decoration-dotted decoration-2 underline-offset-4',
-  wrong: 'text-red-300 line-through decoration-2',
-  missing: 'text-zinc-400 border border-dashed border-zinc-500 rounded px-1',
-  extra: 'text-zinc-500 line-through decoration-2',
+  correct: 'text-ok',
+  typo: 'text-warn underline decoration-dotted decoration-2 underline-offset-4',
+  wrong: 'text-bad line-through decoration-2',
+  missing: 'text-muted border border-dashed border-line-strong rounded-sm px-1',
+  extra: 'text-dim line-through decoration-2',
 };
 
 /** Read out by screen readers, and shown on hover. */
@@ -37,7 +37,7 @@ function Token({ token, showCorrection }: { token: DiffToken; showCorrection: bo
         {token.text}
       </span>
       {correction !== null && (
-        <span className="text-emerald-300" title="o certo era">
+        <span className="text-ok" title="o certo era">
           →&nbsp;{correction}
         </span>
       )}
@@ -61,7 +61,7 @@ export function DiffView({
 
   return (
     <p
-      className="flex flex-wrap gap-x-2 gap-y-1 font-mono text-lg leading-relaxed"
+      className="flex flex-wrap gap-x-2 gap-y-1 font-mono text-2xl leading-[1.7]"
       aria-label={ariaLabel}
     >
       {items.map((token, index) => (
@@ -74,7 +74,7 @@ export function DiffView({
 export function AccuracyBadge({ accuracy }: { accuracy: number }) {
   const percent = Math.round(accuracy * 100);
   const tone =
-    percent === 100 ? 'text-emerald-300' : percent >= 70 ? 'text-amber-300' : 'text-red-300';
+    percent === 100 ? 'bg-ok/10 text-ok' : percent >= 70 ? 'bg-warn/10 text-warn' : 'bg-bad/10 text-bad';
 
-  return <span className={`font-mono text-sm ${tone}`}>{percent}%</span>;
+  return <span className={`rounded-sm px-3 py-1.5 font-mono text-sm font-semibold ${tone}`}>{percent}%</span>;
 }

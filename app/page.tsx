@@ -1,28 +1,14 @@
-'use client';
-
 /**
- * The whole session, as §6 draws it: `idle` until a video resolves, then the
- * practice loop. Phase 1 keeps nothing — leaving goes back to an empty form,
- * which is also the fastest way to start over.
+ * Home: the library first, then a new video. The library is read from disk
+ * here, on the server, and handed to the client screen already rendered.
  */
 
-import { useState } from 'react';
-import { EntryScreen, type StartRequest } from '@/app/components/EntryScreen';
-import { PracticeScreen } from '@/app/components/PracticeScreen';
+import { HomeScreen } from '@/app/components/HomeScreen';
+import { LibraryGrid } from '@/app/components/LibraryGrid';
+import { libraryWritable, listLibrary } from '@/lib/library/catalog';
 
-export default function Home() {
-  const [session, setSession] = useState<StartRequest | null>(null);
+export default async function Home() {
+  const entries = await listLibrary();
 
-  if (session === null) return <EntryScreen onStart={setSession} />;
-
-  return (
-    <PracticeScreen
-      videoId={session.videoId}
-      segments={session.segments}
-      captionKind={session.captionKind}
-      startIndex={session.startIndex}
-      onLeave={() => setSession(null)}
-      libraryCues={session.cues}
-    />
-  );
+  return <HomeScreen library={<LibraryGrid entries={entries} writable={libraryWritable()} />} />;
 }
