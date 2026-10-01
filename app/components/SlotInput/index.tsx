@@ -23,6 +23,8 @@ export type SlotInputProps = {
   onChange: (value: string) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   ariaLabel: string;
+  /** Hovering the current word offers to give it away (see `revealNextWord`). */
+  onRevealWord?: () => void;
   ref?: React.Ref<HTMLTextAreaElement>;
 };
 
@@ -50,7 +52,15 @@ function Caret() {
   );
 }
 
-function Word({ word, focused }: { word: WordSlots; focused: boolean }) {
+function Word({
+  word,
+  focused,
+  onReveal,
+}: {
+  word: WordSlots;
+  focused: boolean;
+  onReveal?: () => void;
+}) {
   const tone =
     word.state === 'done' && word.status !== undefined
       ? DONE[word.status]
@@ -62,8 +72,10 @@ function Word({ word, focused }: { word: WordSlots; focused: boolean }) {
   const firstEmpty = word.slots.findIndex((slot) => slot.kind === 'empty');
   const caretAt = word.state === 'current' && focused ? (firstEmpty === -1 ? word.slots.length : firstEmpty) : -1;
 
+  const revealable = onReveal !== undefined && word.state === 'current' && word.reference !== null;
+
   return (
-    <span className={`inline-flex whitespace-pre ${tone}`}>
+    <span className={`group relative inline-flex whitespace-pre ${tone}`}>
       {word.slots.map((slot, index) => (
         <Fragment key={index}>
           {index === caretAt && <Caret />}
@@ -71,6 +83,22 @@ function Word({ word, focused }: { word: WordSlots; focused: boolean }) {
         </Fragment>
       ))}
       {caretAt === word.slots.length && <Caret />}
+      {revealable && (
+        // Padding, not margin, below the button: the gap stays part of the
+        // hover area, so moving the mouse up to it does not make it vanish.
+        <span className="invisible absolute bottom-full left-1/2 -translate-x-1/2 pb-1 group-hover:visible">
+          <button
+            type="button"
+            tabIndex={-1}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onReveal}
+            className="flex items-center gap-1.5 rounded-sm border border-line-strong bg-surface px-2 py-1 font-sans text-xs tracking-normal whitespace-nowrap text-fg shadow-sm hover:border-accent"
+          >
+            ver palavra
+            <span className="font-mono text-muted">Ctrl ↓</span>
+          </button>
+        </span>
+      )}
     </span>
   );
 }
@@ -82,6 +110,7 @@ export function SlotInput({
   onChange,
   onKeyDown,
   ariaLabel,
+  onRevealWord,
   ref,
 }: SlotInputProps) {
   const [focused, setFocused] = useState(false);
@@ -94,14 +123,20 @@ export function SlotInput({
 
   return (
     <div className="relative">
+      {/* Above the textarea so the words can be hovered; a press anywhere on
+          them still lands the focus in the field underneath. */}
       <p
         aria-hidden
-        className={`flex min-h-[4.5rem] flex-wrap content-start gap-x-4 gap-y-2 py-2 font-mono text-2xl leading-relaxed tracking-[0.2em] transition-opacity ${
+        onMouseDown={(event) => {
+          event.preventDefault();
+          field.current?.focus();
+        }}
+        className={`relative z-10 flex min-h-[4.5rem] cursor-text flex-wrap content-start gap-x-4 gap-y-2 py-2 font-mono text-2xl leading-relaxed tracking-[0.2em] transition-opacity ${
           focused ? '' : 'opacity-60'
         }`}
       >
         {words.map((word, index) => (
-          <Word key={index} word={word} focused={focused} />
+          <Word key={index} word={word} focused={focused} onReveal={onRevealWord} />
         ))}
       </p>
 

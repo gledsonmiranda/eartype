@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fillWord, slotWords, wordStatus } from '@/lib/practice/slots';
+import { fillWord, revealNextWord, slotWords, wordStatus } from '@/lib/practice/slots';
 
 const render = (slots: { char: string }[]) => slots.map((slot) => slot.char).join('');
 
@@ -57,9 +57,50 @@ describe('slotWords', () => {
     expect(render(words[1].slots)).toBe('bi_');
   });
 
+  it('closes the last word without a space once it is right', () => {
+    const words = slotWords('the big cat.', 'the big cat');
+    expect(words[2]).toMatchObject({ state: 'done', status: 'correct' });
+  });
+
+  it('closes and grades the last word once its blanks are all filled', () => {
+    expect(slotWords('tough choices.', 'tough choicee')[1]).toMatchObject({ state: 'done', status: 'typo' });
+    expect(slotWords('the big cat', 'the big dog')[2]).toMatchObject({ state: 'done', status: 'wrong' });
+  });
+
+  it('keeps the last word open while it still has blanks', () => {
+    expect(slotWords('the big cat', 'the big ca')[2]).toMatchObject({ state: 'current', status: undefined });
+    expect(slotWords('the big cat', 'the big co')[2]).toMatchObject({ state: 'current', status: undefined });
+  });
+
   it('shows words typed past the end of the sentence as extra', () => {
     const words = slotWords('hi there', 'hi there you ');
     expect(words).toHaveLength(3);
     expect(words[2]).toMatchObject({ reference: null, state: 'done', status: 'extra' });
+  });
+});
+
+describe('revealNextWord', () => {
+  it('gives the first word when nothing is typed yet', () => {
+    expect(revealNextWord('hello big world', '')).toBe('hello ');
+  });
+
+  it('replaces the word being typed, keeping what came before', () => {
+    expect(revealNextWord('hello big world', 'hello bi')).toBe('hello big ');
+    expect(revealNextWord('hello big world', 'hello bxg')).toBe('hello big ');
+  });
+
+  it('gives the next word once the last one was closed with a space', () => {
+    expect(revealNextWord('hello big world', 'hello ')).toBe('hello big ');
+    expect(revealNextWord('hello big world', 'helo big ')).toBe('helo big world ');
+  });
+
+  it('keeps the reference punctuation of the word it gives', () => {
+    expect(revealNextWord("I don't know.", 'I ')).toBe("I don't ");
+    expect(revealNextWord("I don't know.", "I don't kn")).toBe("I don't know. ");
+  });
+
+  it('leaves the text alone past the last reference word', () => {
+    expect(revealNextWord('hello world', 'hello world ')).toBe('hello world ');
+    expect(revealNextWord('hello world', 'hello world extra')).toBe('hello world extra');
   });
 });

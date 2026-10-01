@@ -97,9 +97,24 @@ export function slotWords(
   const finished = /\s$/.test(typed) ? got.length : got.length - 1;
   const current = Math.max(finished, 0);
 
+  // No space comes after the last word — Enter does. So the last word closes
+  // as soon as it is right or has no blanks left, and is graded like the
+  // rest, instead of sitting there looking unfinished.
+  const last = expected.length - 1;
+  const lastIsComplete =
+    finished === last &&
+    got.length === expected.length &&
+    (wordStatus(expected[last], got[last], mode) === 'correct' ||
+      fillWord(expected[last], got[last]).every((slot) => slot.kind !== 'empty'));
+
   const result: WordSlots[] = expected.map((word, index) => {
     const typedWord = got[index] ?? '';
-    const state = index < finished ? 'done' : index === current ? 'current' : 'pending';
+    const state =
+      index < finished || (index === last && lastIsComplete)
+        ? 'done'
+        : index === current
+          ? 'current'
+          : 'pending';
     return {
       reference: word,
       slots: fillWord(word, typedWord),
@@ -118,4 +133,21 @@ export function slotWords(
   }
 
   return result;
+}
+
+/**
+ * The "just this one word" hint: the word being typed — or the next one, if
+ * the last was closed with a space — swapped for the reference word, plus the
+ * space that closes it, so you carry on typing from the word after.
+ *
+ * Same positional rule as `slotWords`: typed word N stands for reference word
+ * N. Past the last reference word there is nothing to give, so `typed` comes
+ * back untouched.
+ */
+export function revealNextWord(reference: string, typed: string): string {
+  const prefix = typed.replace(/\S+$/, '');
+  const word = words(reference)[words(prefix).length];
+  if (word === undefined) return typed;
+  const gap = prefix === '' || /\s$/.test(prefix) ? '' : ' ';
+  return `${prefix}${gap}${word} `;
 }

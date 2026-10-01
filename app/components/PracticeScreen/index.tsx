@@ -15,6 +15,7 @@ import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
+import { revealNextWord } from '@/lib/practice/slots';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
 import {
   PLAYER_ERROR_MESSAGES,
@@ -173,6 +174,13 @@ export function PracticeScreen({
     setSession((current) => recordOutcome(current, 'skipped'));
   };
 
+  // When you are stuck on a single word: hand over just that one and keep going.
+  const revealWord = () => {
+    if (segment === undefined) return;
+    setTyped((current) => revealNextWord(segment.referenceText, current));
+    input.current?.focus();
+  };
+
   const togglePause = () => {
     const current = player.current;
     if (current === null) return;
@@ -202,6 +210,12 @@ export function PracticeScreen({
       // A second Enter on a wrong answer is how you move on without the mouse.
       if (revealed || (result !== null && !isPerfect(result))) acceptAndMoveOn();
       else check();
+      return;
+    }
+
+    if (event.ctrlKey && event.key === 'ArrowDown') {
+      event.preventDefault();
+      revealWord();
       return;
     }
 
@@ -359,6 +373,7 @@ export function PracticeScreen({
                       onChange={setTyped}
                       onKeyDown={onKeyDown}
                       ariaLabel={`digite o trecho ${session.index + 1} de ${session.total}`}
+                      onRevealWord={revealWord}
                     />
                   ) : (
                     <textarea
@@ -476,6 +491,7 @@ export function PracticeScreen({
         <Key keys="↵">verifica</Key>
         <Key keys="Ctrl ↵">repete</Key>
         <Key keys="Ctrl Espaço">pausa</Key>
+        <Key keys="Ctrl ↓">próxima palavra</Key>
         <Key keys="Ctrl →">revela</Key>
         <Key keys="Alt ← →">navega</Key>
       </footer>
