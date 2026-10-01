@@ -23,6 +23,17 @@
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
+/* Tailwind v4 resets buttons to the default cursor. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-fg);

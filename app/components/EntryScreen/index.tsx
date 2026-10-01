@@ -16,6 +16,7 @@ import { CaptionDrop } from '@/app/components/CaptionDrop';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
 import { segment as segmentCues } from '@/lib/captions/segmenter';
 import { parseYouTubeUrl } from '@/lib/youtube/parse-url';
+import { SUBTITLE_SITES } from '@/lib/youtube/subtitle-sites';
 import type { CaptionKind, Cue, Segment } from '@/types';
 
 export type StartRequest = {
@@ -195,9 +196,25 @@ export function EntryScreen({ library, onStart }: EntryScreenProps) {
                   className="h-12 rounded-sm border border-line bg-bg px-4 font-mono text-sm text-fg outline-none placeholder:text-dim focus:border-accent"
                 />
                 <span className="text-xs text-muted">
-                  Baixe a legenda no downsub.com, por exemplo. Na tela de prática, “adicionar à
-                  biblioteca” guarda os dois para a próxima vez.
+                  Na tela de prática, “adicionar à biblioteca” guarda o vídeo e a legenda para a
+                  próxima vez.
                 </span>
+                {video !== null && (
+                  <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+                    Baixar a legenda em:
+                    {SUBTITLE_SITES.map((site) => (
+                      <a
+                        key={site.name}
+                        href={site.href(video.videoId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-accent underline underline-offset-4 hover:brightness-110"
+                      >
+                        {site.name} ↗
+                      </a>
+                    ))}
+                  </span>
+                )}
               </label>
 
               <div className="flex flex-col gap-2 text-sm">
