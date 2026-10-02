@@ -68,11 +68,11 @@ function Word({
         ? 'text-fg'
         : 'text-fg/80';
 
-  // The caret sits on the first blank, or after the last letter when full.
-  const firstEmpty = word.slots.findIndex((slot) => slot.kind === 'empty');
-  const caretAt = word.state === 'current' && focused ? (firstEmpty === -1 ? word.slots.length : firstEmpty) : -1;
+  const caretAt = focused && word.caret !== undefined ? word.caret : -1;
 
-  const revealable = onReveal !== undefined && word.state === 'current' && word.reference !== null;
+  // Ctrl+↓ gives the word at the end of the text — not one reopened mid-way.
+  const revealable =
+    onReveal !== undefined && word.state === 'current' && !word.reopened && word.reference !== null;
 
   return (
     <span className={`group relative inline-flex whitespace-pre ${tone}`}>
@@ -114,12 +114,25 @@ export function SlotInput({
   ref,
 }: SlotInputProps) {
   const [focused, setFocused] = useState(false);
+  // Where the textarea's caret is — arrows and clicks move it, not just typing.
+  const [caret, setCaret] = useState<number | null>(null);
   const field = useRef<HTMLTextAreaElement | null>(null);
   // `autoFocus` can land before `onFocus` is listening — ask the document.
   useEffect(() => {
     setFocused(document.activeElement === field.current);
   }, []);
-  const words = useMemo(() => slotWords(reference, value, mode), [reference, value, mode]);
+  const words = useMemo(
+    () => slotWords(reference, value, mode, caret ?? value.length),
+    [reference, value, mode, caret],
+  );
+  const groups = useMemo(() => {
+    const result: number[][] = [];
+    words.forEach((word, index) => {
+      if (index > 0 && words[index - 1].joined) result[result.length - 1].push(index);
+      else result.push([index]);
+    });
+    return result;
+  }, [words]);
 
   return (
     <div className="relative">
@@ -135,8 +148,13 @@ export function SlotInput({
           focused ? '' : 'opacity-60'
         }`}
       >
-        {words.map((word, index) => (
-          <Word key={index} word={word} focused={focused} onReveal={onRevealWord} />
+        {groups.map((group) => (
+          // The parts of a hyphenated word wrap and space as one word.
+          <span key={group[0]} className="inline-flex">
+            {group.map((index) => (
+              <Word key={index} word={words[index]} focused={focused} onReveal={onRevealWord} />
+            ))}
+          </span>
         ))}
       </p>
 
@@ -147,7 +165,11 @@ export function SlotInput({
           else if (ref) ref.current = node;
         }}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          setCaret(event.target.selectionEnd);
+          onChange(event.target.value);
+        }}
+        onSelect={(event) => setCaret(event.currentTarget.selectionEnd)}
         onKeyDown={onKeyDown}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}

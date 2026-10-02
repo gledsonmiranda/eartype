@@ -15,7 +15,7 @@ import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
-import { revealNextWord } from '@/lib/practice/slots';
+import { revealNextWord, separateJoinedParts } from '@/lib/practice/slots';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
 import {
   PLAYER_ERROR_MESSAGES,
@@ -93,7 +93,7 @@ export function PracticeScreen({
   // untouched: it still only runs in `check()`, on Enter.
   const liveTokens = useMemo(() => {
     if (result !== null || segment === undefined) return [];
-    return liveCompare(segment.referenceText, typed, mode);
+    return liveCompare(segment.referenceText, separateJoinedParts(segment.referenceText, typed), mode);
   }, [result, segment, typed, mode]);
 
   const play = useCallback(() => {
@@ -144,7 +144,7 @@ export function PracticeScreen({
     // Already right and waiting to advance: a second Enter must not fire again.
     if (result !== null && isPerfect(result)) return;
 
-    const diff = compare(segment.referenceText, typed, mode);
+    const diff = compare(segment.referenceText, separateJoinedParts(segment.referenceText, typed), mode);
     setResult(diff);
 
     if (isPerfect(diff)) {
