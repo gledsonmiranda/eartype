@@ -5,3 +5,4 @@
 - [ ] Link or pass the mouse on the subtitle to see the translate in `google translate`
 - [ ] Add button to download subtitles srt
 - [ ] store when the user stopped in each video.
+- [ ] add google analytics
