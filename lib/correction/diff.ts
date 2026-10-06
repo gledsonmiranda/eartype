@@ -109,8 +109,10 @@ export function compare(
   const cost: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
   const move: Move[][] = Array.from({ length: n + 1 }, () => new Array<Move>(m + 1).fill('align'));
 
+  const gapCost = (token: Token) => (token.optional ? 0 : COST_GAP);
+
   for (let i = n - 1; i >= 0; i--) {
-    cost[i][m] = cost[i + 1][m] + COST_GAP;
+    cost[i][m] = cost[i + 1][m] + gapCost(ref[i]);
     move[i][m] = 'missing';
   }
   for (let j = m - 1; j >= 0; j--) {
@@ -121,7 +123,7 @@ export function compare(
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
       const align = cost[i + 1][j + 1] + pairCost(ref[i], got[j]);
-      const missing = cost[i + 1][j] + COST_GAP;
+      const missing = cost[i + 1][j] + gapCost(ref[i]);
       const extra = cost[i][j + 1] + COST_GAP;
 
       const best = Math.min(align, missing, extra);
@@ -140,7 +142,9 @@ export function compare(
     const step: Move = i === n ? 'extra' : j === m ? 'missing' : move[i][j];
 
     if (step === 'missing') {
-      tokens.push({ text: ref[i].surface, status: 'missing' });
+      // Left out on purpose is as good as typed.
+      if (ref[i].optional) score += 1;
+      else tokens.push({ text: ref[i].surface, status: 'missing' });
       i++;
       continue;
     }

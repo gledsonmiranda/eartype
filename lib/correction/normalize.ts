@@ -23,6 +23,11 @@ export type Token = {
   variants: string[];
   /** What to render on screen for this token. */
   surface: string;
+  /**
+   * Leaving it out is not an error — `percent` from a `10%` the slots drew as
+   * one word, so typing `10` fills it.
+   */
+  optional?: boolean;
 };
 
 // -------------------------------------------------------- tables (§5.1)
@@ -443,7 +448,10 @@ function tokenizeWord(raw: string): Token[] {
   // `10%` → `10 percent`
   const percentage = /^(\d+)%$/.exec(trimmed);
   if (percentage) {
-    return [makeToken(percentage[1], percentage[1]), makeToken('percent', 'percent')];
+    return [
+      makeToken(percentage[1], percentage[1]),
+      { ...makeToken('percent', 'percent'), optional: true },
+    ];
   }
 
   // Digit ordinal: `1st`, `22nd`
@@ -475,8 +483,14 @@ function tokenizeWord(raw: string): Token[] {
     return [makeToken(ordinalSuffix(ORDINALS[lower]), trimmed)];
   }
 
-  const us = US_UK[lower] ?? lower;
-  return [makeToken(us, trimmed, us === lower ? [lower] : [us, lower])];
+  // Punctuation inside a word is never a blank to fill in the slots, so it is
+  // not something to get wrong either: `todays` is `today's`, `5` is `$5`.
+  const bare = lower.replace(/[^\p{L}\p{N}]/gu, '');
+  if (bare === '') return [];
+  if (/^\d+$/.test(bare)) return [makeToken(String(Number(bare)), trimmed)];
+
+  const us = US_UK[bare] ?? bare;
+  return [makeToken(us, trimmed, us === bare ? [bare] : [us, bare])];
 }
 
 /** `2nd` → 2. Returns `null` when the token is not an ordinal. */

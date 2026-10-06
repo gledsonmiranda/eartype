@@ -218,3 +218,22 @@ describe('missedWords — feeds §RF-08', () => {
     expect(missedWords(compare('the elephants', 'the elephnats'))).toEqual([]);
   });
 });
+
+describe('compare — punctuation inside a word is optional', () => {
+  // The slots draw it as already filled in, so leaving it out must not count.
+  it.each([
+    ["okay, today's video", 'okay todays video'],
+    ["it's five o'clock", 'its five oclock'],
+    ['it costs $5', 'it costs 5'],
+    ['a 10% raise', 'a 10 raise'],
+    ['a 10% raise', 'a 10 percent raise'],
+  ])('%s ← %s', (reference, typed) => {
+    const result = compare(reference, typed);
+    expect(isPerfect(result)).toBe(true);
+    expect(result.accuracy).toBe(1);
+  });
+
+  it('still tells apart words that sound different', () => {
+    expect(isPerfect(compare("we'll go", 'well go'))).toBe(false);
+  });
+});
