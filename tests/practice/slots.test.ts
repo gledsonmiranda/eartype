@@ -216,3 +216,15 @@ describe('slotWords — caret', () => {
     ]);
   });
 });
+
+describe('slotWords — punctuation drawn for you is not an error', () => {
+  it.each([
+    ["today's video", 'todays '],
+    ["o'clock now", 'oclock '],
+    ['$5 each', '5 '],
+    ['10% off', '10 '],
+    ["we'll see", 'well '],
+  ])('%s ← %s', (reference, typed) => {
+    expect(slotWords(reference, typed)[0].status).toBe('correct');
+  });
+});

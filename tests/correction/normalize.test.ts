@@ -107,9 +107,9 @@ describe('canonicalize — ambiguity resolved by variant sets', () => {
     expect(tokens[1].canonical).toBe('not');
   });
 
-  it("the possessive 's is NOT expanded", () => {
-    expect(canon("the dog's bone")).toEqual(['the', "dog's", 'bone']);
-    expect(canon("John's car")).toEqual(["john's", 'car']);
+  it("the possessive 's is NOT expanded (and its apostrophe is optional)", () => {
+    expect(canon("the dog's bone")).toEqual(['the', 'dogs', 'bone']);
+    expect(canon("John's car")).toEqual(['johns', 'car']);
   });
 
   it('an audible collision is not treated as a contraction', () => {
