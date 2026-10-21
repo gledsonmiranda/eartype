@@ -233,7 +233,17 @@ describe('compare — punctuation inside a word is optional', () => {
     expect(result.accuracy).toBe(1);
   });
 
-  it('still tells apart words that sound different', () => {
-    expect(isPerfect(compare("we'll go", 'well go'))).toBe(false);
+  it.each([
+    ["and then we'll go", 'and then well go'],
+    ["we're here", 'were here'],
+    ["he'll know", 'Hell know'],
+  ])('%s ← %s (a collision, against its contraction)', (reference, typed) => {
+    expect(isPerfect(compare(reference, typed))).toBe(true);
+  });
+
+  it('a collision against the plain word stays the plain word', () => {
+    expect(isPerfect(compare('very well', 'very well'))).toBe(true);
+    expect(isPerfect(compare('they were here', "they we're here"))).toBe(false);
+    expect(isPerfect(compare("well, we'll see", 'well well see'))).toBe(false);
   });
 });

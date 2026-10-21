@@ -155,9 +155,10 @@ const CONTRACTIONS: Record<string, (string | string[])[]> = {
 };
 
 /**
- * Apostrophe-less forms that are real words **and** audibly different from the
- * contraction. Tolerance would cost real information here: a listener hears
- * `well` apart from `we'll`, so accepting both would forgive a listening miss.
+ * Apostrophe-less forms that are also real words: `well` is not `we will`, so
+ * these are never expanded on their own. Against a caption that says `we'll`,
+ * though, the slots draw the apostrophe for you — `restoreApostrophes` below
+ * reads `well` as `we'll` there.
  *
  * `its`/`it's` and `lets`/`let's` are deliberately left out — they sound
  * identical, and demanding the apostrophe would be grading spelling in a
@@ -189,6 +190,13 @@ const CONTRACTIONS_WITHOUT_APOSTROPHE: Record<string, (string | string[])[]> = (
   }
   return derived;
 })();
+
+/** `well` → `we'll`: the contraction each collision is missing an apostrophe from. */
+const COLLISION_CONTRACTIONS: Record<string, string> = Object.fromEntries(
+  Object.keys(CONTRACTIONS)
+    .filter((form) => APOSTROPHE_LESS_COLLISIONS.has(form.replace(/'/g, '')))
+    .map((form) => [form.replace(/'/g, ''), form]),
+);
 
 /** §5 — US/UK spelling. Canonical: the US form. */
 const US_UK: Record<string, string> = {
@@ -564,6 +572,28 @@ export function canonicalize(text: string, mode: CorrectionMode = 'lenient'): To
   }
 
   return collapseNumbers(words.flatMap(tokenizeWord));
+}
+
+const bareWord = (raw: string) =>
+  trimPunctuation(raw.replace(APOSTROPHES, "'")).toLowerCase();
+
+/**
+ * `typed` with the apostrophe put back into `well`, `were`, `hell`… wherever
+ * the caption says `we'll`, `we're`, `he'll` and never the plain word — the
+ * apostrophe is drawn for you, so leaving it out is not a listening miss.
+ * Where the caption has the plain word too, which one was meant is anyone's
+ * guess, and `typed` is left as it is.
+ */
+export function restoreApostrophes(reference: string, typed: string): string {
+  const expected = new Set((reference ?? '').split(/\s+/).map(bareWord));
+
+  return typed.replace(/\S+/g, (raw) => {
+    const word = bareWord(raw);
+    const contraction = COLLISION_CONTRACTIONS[word];
+    if (contraction === undefined || !expected.has(contraction) || expected.has(word)) return raw;
+    const at = raw.toLowerCase().indexOf(word);
+    return at === -1 ? raw : raw.slice(0, at) + contraction + raw.slice(at + word.length);
+  });
 }
 
 /** Two tokens match when their sets of accepted forms intersect. */

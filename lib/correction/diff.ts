@@ -8,7 +8,7 @@
  * No React, no DOM: text in, `DiffResult` out.
  */
 
-import { canonicalize, tokensMatch, type Token } from '@/lib/correction/normalize';
+import { canonicalize, restoreApostrophes, tokensMatch, type Token } from '@/lib/correction/normalize';
 import type { CorrectionMode, DiffResult, DiffToken } from '@/types';
 
 /**
@@ -100,7 +100,7 @@ export function compare(
   mode: CorrectionMode = 'lenient',
 ): DiffResult {
   const ref = canonicalize(reference, mode);
-  const got = canonicalize(typed, mode);
+  const got = canonicalize(mode === 'strict' ? typed : restoreApostrophes(reference, typed), mode);
 
   const n = ref.length;
   const m = got.length;
