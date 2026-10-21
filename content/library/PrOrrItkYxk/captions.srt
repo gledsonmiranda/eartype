@@ -616,7 +616,7 @@ Chia seed pudding, Greek yogurt,
 
 155
 00:04:47,533 --> 00:04:50,000
-blueberries, hair, walnuts, hemp hearts
+blueberries, pear, walnuts, hemp hearts
 
 156
 00:04:50,000 --> 00:04:51,633
@@ -732,7 +732,7 @@ Downtown downtown.
 
 184
 00:05:57,166 --> 00:05:58,633
-This is called Yelltown.
+This is called Yelatown.
 
 185
 00:05:59,133 --> 00:06:00,066
