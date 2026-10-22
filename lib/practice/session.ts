@@ -1,10 +1,10 @@
 /**
  * RF-07 — where you are in the video and how each segment went.
  *
- * Phase 1 keeps no history (SPEC §11), so this is only the shape of the
- * current run: one outcome per segment, the attempts spent on the segment in
- * front of you, and the moves that change either. Pure, so the practice
- * screen can stay about rendering.
+ * This is only the shape of the current run: one outcome per segment, the
+ * attempts spent on the segment in front of you, and the moves that change
+ * either. Pure, so the practice screen can stay about rendering; keeping the
+ * run between visits is `progress.ts`.
  */
 
 export type SegmentOutcome =

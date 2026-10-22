@@ -35,7 +35,7 @@ The goal is not to memorise the video, it is to **train listening/comprehension*
 | Stack | **Next.js (App Router) + TypeScript** | It has a server: caption lookup happens in a route handler, with no CORS. A future deploy is trivial. |
 | Captions | **YouTube's own captions** | Free, and they already come with timestamps. Limitation: a video with no English captions is unsupported in v1. |
 | Correction | **Lenient, configurable** | Normalises case/punctuation by default; strict mode is an option. Word-by-word diff. |
-| Persistence | **Browser only (IndexedDB)** | Zero infrastructure. JSON export/import as a manual backup. |
+| Persistence | **Browser only** — `localStorage` for per-video progress and settings now; IndexedDB when attempt history arrives | Zero infrastructure, no login. JSON export/import as a manual backup. |
 | Visual identity | **Our own** | From `DESIGN.md` only the *structure* is reused (spacing scale, type hierarchy, radii, component patterns); the palette and fonts are our own. The name is **Eartype**. |
 | Contractions and reductions | **Accept every equivalent form** | `don't` = `do not`, and also `gonna` = `going to`, `wanna` = `want to`. Requires a bidirectional equivalence table and multi-token alignment (§5.1). |
 | MVP cut | **Phase 1: the bare loop, no persistence** | Closing the tab loses your progress. Persistence arrives in Phase 2. |

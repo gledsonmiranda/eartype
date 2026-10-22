@@ -2,8 +2,8 @@
 
 /**
  * The whole session, as §6 draws it: `idle` until a video resolves, then the
- * practice loop. Phase 1 keeps nothing — leaving goes back to an empty form,
- * which is also the fastest way to start over.
+ * practice loop. Leaving goes back to an empty form; how far you got in the
+ * video is kept by the practice screen itself, per video.
  */
 
 import { useState, type ReactNode } from 'react';
