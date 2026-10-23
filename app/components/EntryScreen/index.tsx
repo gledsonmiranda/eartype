@@ -15,7 +15,6 @@ import { useState, type ReactNode } from 'react';
 import { ArrowUpRight } from '@phosphor-icons/react';
 import { AppHeader } from '@/app/components/AppHeader';
 import { CaptionDrop } from '@/app/components/CaptionDrop';
-import { ProgressBackup } from '@/app/components/ProgressBackup';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
 import { segment as segmentCues } from '@/lib/captions/segmenter';
 import { parseYouTubeUrl } from '@/lib/youtube/parse-url';
@@ -286,17 +285,14 @@ export function EntryScreen({ library, onStart }: EntryScreenProps) {
         </section>
 
         <section className="flex flex-col gap-6" aria-labelledby="library-title">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <h2
-                id="library-title"
-                className="font-display text-[32px] leading-tight font-bold tracking-tight"
-              >
-                Biblioteca
-              </h2>
-              <p className="text-sm text-muted">Vídeos com legenda já salva. Clique e pratique.</p>
-            </div>
-            <ProgressBackup />
+          <div className="flex flex-col gap-1">
+            <h2
+              id="library-title"
+              className="font-display text-[32px] leading-tight font-bold tracking-tight"
+            >
+              Biblioteca
+            </h2>
+            <p className="text-sm text-muted">Vídeos com legenda já salva. Clique e pratique.</p>
           </div>
           {library}
         </section>

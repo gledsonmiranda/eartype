@@ -10,7 +10,7 @@ import { DownloadSimple, UploadSimple } from '@phosphor-icons/react';
 import { exportAll, importAll, PROGRESS_CHANGED } from '@/lib/practice/progress';
 
 const BUTTON =
-  'flex h-10 min-w-10 items-center justify-center gap-2 rounded-sm border border-line bg-surface px-3 text-sm sm:px-4 font-medium text-fg hover:border-accent hover:text-accent';
+  'flex h-10 min-w-10 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-line bg-surface px-3 text-sm sm:px-4 font-medium text-fg hover:border-accent hover:text-accent';
 
 export function ProgressBackup() {
   const file = useRef<HTMLInputElement>(null);
@@ -46,11 +46,10 @@ export function ProgressBackup() {
   return (
     <div className="flex flex-col items-start gap-2 sm:items-end">
       <div className="flex items-center gap-3">
-        {/* On a phone the labels go and the row says what the icons are about. */}
-        <span className="text-sm text-muted sm:hidden">Progresso:</span>
+        {/* The card around it already says this is about progress. */}
         <button type="button" onClick={download} aria-label="Exportar progresso" title="Exportar progresso" className={BUTTON}>
           <UploadSimple size={18} weight="bold" aria-hidden="true" />
-          <span className="hidden sm:inline">Exportar progresso</span>
+          <span>Exportar</span>
         </button>
         <button
           type="button"
@@ -60,7 +59,7 @@ export function ProgressBackup() {
           className={BUTTON}
         >
           <DownloadSimple size={18} weight="bold" aria-hidden="true" />
-          <span className="hidden sm:inline">Importar progresso</span>
+          <span>Importar</span>
         </button>
       </div>
       <input

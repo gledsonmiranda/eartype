@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import builtInWords from '@/content/vocabulary/words.json';
+import { PROGRESS_CHANGED } from '@/lib/practice/progress';
 import { EMPTY_OVERLAY, loadOverlay, mergeWords, saveOverlay, type BuiltInWord, type Overlay } from '@/lib/vocabulary/words';
 
 export const BUILT_IN: readonly BuiltInWord[] = builtInWords;
@@ -22,9 +23,13 @@ export function useVocabulary() {
       setReady(true);
     };
     refresh();
-    // Edits or practice in another tab.
+    // Edits or practice in another tab, or a backup imported on this page.
     window.addEventListener('storage', refresh);
-    return () => window.removeEventListener('storage', refresh);
+    window.addEventListener(PROGRESS_CHANGED, refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener(PROGRESS_CHANGED, refresh);
+    };
   }, []);
 
   /** Applies a change and saves it — read fresh so two tabs don't undo each other. */
