@@ -31,13 +31,13 @@ export function ProgressBackup() {
     const result = importAll(await chosen.text());
     if (result.ok) {
       window.dispatchEvent(new Event(PROGRESS_CHANGED));
-      setMessage({
-        ok: true,
-        text:
-          result.count === 0
-            ? 'nada novo — o que já está aqui é mais recente'
-            : `${result.count} ${result.count === 1 ? 'vídeo importado' : 'vídeos importados'}`,
-      });
+      const videos =
+        result.count === 0
+          ? result.vocabulary
+            ? 'nenhum vídeo novo'
+            : 'nada novo — o que já está aqui é mais recente'
+          : `${result.count} ${result.count === 1 ? 'vídeo importado' : 'vídeos importados'}`;
+      setMessage({ ok: true, text: result.vocabulary ? `${videos}, vocabulário mesclado` : videos });
     } else {
       setMessage({ ok: false, text: result.message });
     }

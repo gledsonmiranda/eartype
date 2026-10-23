@@ -12,6 +12,8 @@
  */
 
 import { firstPending, startSession, type SegmentOutcome, type Session } from '@/lib/practice/session';
+import { read, remove, storage, write } from '@/lib/storage/local';
+import { loadOverlay, mergeOverlays, parseOverlay, saveOverlay } from '@/lib/vocabulary/words';
 import type { Segment } from '@/types';
 
 type Answered = Exclude<SegmentOutcome, 'pending'>;
@@ -125,31 +127,6 @@ function isCount(value: unknown): value is number {
 // ---------------------------------------------------------------------------
 // Storage
 
-function storage(): Storage | null {
-  try {
-    return globalThis.localStorage ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function read(key: string): unknown {
-  try {
-    const raw = storage()?.getItem(key);
-    return raw === null || raw === undefined ? null : JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function write(key: string, value: unknown): void {
-  try {
-    storage()?.setItem(key, JSON.stringify(value));
-  } catch {
-    // Quota or a blocked storage: the run just isn't kept.
-  }
-}
-
 export function loadProgress(videoId: string): StoredProgress | null {
   return parseProgress(read(PROGRESS_PREFIX + videoId));
 }
@@ -159,11 +136,7 @@ export function saveProgress(videoId: string, stored: StoredProgress): void {
 }
 
 export function clearProgress(videoId: string): void {
-  try {
-    storage()?.removeItem(PROGRESS_PREFIX + videoId);
-  } catch {
-    // Nothing to clear if storage is unreachable.
-  }
+  remove(PROGRESS_PREFIX + videoId);
 }
 
 export function listProgress(): Record<string, StoredProgress> {
@@ -193,13 +166,18 @@ export function saveSettings(settings: StoredSettings): void {
 }
 
 // ---------------------------------------------------------------------------
-// Backup (R-10) — clearing the browser should not cost you every video.
+// Backup (R-10) — clearing the browser should not cost you every video, nor
+// the words you added. `vocabulary` is optional: older backups have none.
 
 export function exportAll(): string {
-  return JSON.stringify({ app: 'eartype', v: 1, progress: listProgress(), settings: loadSettings() }, null, 2);
+  return JSON.stringify(
+    { app: 'eartype', v: 1, progress: listProgress(), settings: loadSettings(), vocabulary: loadOverlay() },
+    null,
+    2,
+  );
 }
 
-export type ImportResult = { ok: true; count: number } | { ok: false; message: string };
+export type ImportResult = { ok: true; count: number; vocabulary: boolean } | { ok: false; message: string };
 
 /** Merges a backup in, keeping whichever record of each video is newer. */
 export function importAll(json: string): ImportResult {
@@ -224,6 +202,11 @@ export function importAll(json: string): ImportResult {
     incoming.push([videoId, stored]);
   }
 
+  const vocabulary = backup.vocabulary === undefined ? null : parseOverlay(backup.vocabulary);
+  if (backup.vocabulary !== undefined && vocabulary === null) {
+    return { ok: false, message: 'o vocabulário no arquivo está corrompido' };
+  }
+
   let count = 0;
   for (const [videoId, stored] of incoming) {
     const current = loadProgress(videoId);
@@ -235,7 +218,9 @@ export function importAll(json: string): ImportResult {
   const settings = parseSettings(backup.settings);
   if (settings !== null) saveSettings(settings);
 
-  return { ok: true, count };
+  if (vocabulary !== null) saveOverlay(mergeOverlays(loadOverlay(), vocabulary));
+
+  return { ok: true, count, vocabulary: vocabulary !== null };
 }
 
 function notOurs(): ImportResult {
