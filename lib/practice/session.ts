@@ -53,6 +53,18 @@ export function recordOutcome(session: Session, outcome: SegmentOutcome): Sessio
 }
 
 /**
+ * Marks every open segment as typed correctly, keeping what was already
+ * answered — for a video practised before progress was kept.
+ */
+export function completeAll(session: Session): Session {
+  return {
+    ...session,
+    outcomes: session.outcomes.map((outcome) => (outcome === 'pending' ? 'correct' : outcome)),
+    attempts: 0,
+  };
+}
+
+/**
  * Moves to a segment, forgetting the attempts spent on the last one. Past the
  * last segment the index stays put — `isFinished` is what ends the run.
  */

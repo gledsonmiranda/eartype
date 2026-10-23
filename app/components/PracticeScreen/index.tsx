@@ -15,6 +15,7 @@ import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
 import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
+import { VideoSettings } from '@/app/components/VideoSettings';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
 import { revealNextWord, separateJoinedParts } from '@/lib/practice/slots';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
@@ -34,6 +35,7 @@ import {
   toStored,
 } from '@/lib/practice/progress';
 import {
+  completeAll,
   countAttempt,
   firstPending,
   goTo as goToSegment,
@@ -96,7 +98,6 @@ export function PracticeScreen({
   const [restored, setRestored] = useState(false);
   // A saved run waiting for "continuar": while set, nothing autoplays.
   const [resumeOffer, setResumeOffer] = useState(false);
-  const [confirmingReset, setConfirmingReset] = useState(false);
   // Bumped on reset, so segment 1 plays again even when it was already current.
   const [restartKey, setRestartKey] = useState(0);
 
@@ -184,10 +185,15 @@ export function PracticeScreen({
   const restart = () => {
     clearProgress(videoId);
     setResumeOffer(false);
-    setConfirmingReset(false);
     setShowAll(false);
     moveWith(() => startSession(segments.length));
     setRestartKey((current) => current + 1);
+  };
+
+  /** For a video already done before progress was kept: every open segment counts as typed. */
+  const completeRemaining = () => {
+    setResumeOffer(false);
+    moveWith(completeAll);
   };
 
   const advance = () =>
@@ -332,61 +338,17 @@ export function PracticeScreen({
             {Math.min(session.index + 1, session.total)} / {session.total}
           </span>
         </div>
-        <label className="flex min-h-11 items-center gap-2 text-sm whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={slots}
-            onChange={(event) => {
-              setSlots(event.target.checked);
-              input.current?.focus();
-            }}
-            className="size-4 accent-accent"
-          />
-          Dica de letras
-        </label>
-        {canBeStrict && (
-          <label className="flex min-h-11 items-center gap-2 text-sm whitespace-nowrap text-muted">
-            <input
-              type="checkbox"
-              checked={strict}
-              onChange={(event) => setStrict(event.target.checked)}
-              className="size-4 accent-accent"
-            />
-            Modo estrito
-          </label>
-        )}
-        {answered > 0 &&
-          (confirmingReset ? (
-            <div role="alertdialog" aria-label="confirmar zerar progresso" className="flex min-h-11 items-center gap-2 text-sm">
-              <span className="text-fg">Zerar o progresso deste vídeo?</span>
-              <button
-                type="button"
-                onClick={restart}
-                autoFocus
-                className="rounded-sm bg-bad px-3 py-1 font-medium text-bg"
-              >
-                zerar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmingReset(false);
-                  input.current?.focus();
-                }}
-                className="rounded-sm border border-line px-3 py-1 text-fg"
-              >
-                cancelar
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingReset(true)}
-              className="flex min-h-11 items-center text-sm whitespace-nowrap text-muted hover:text-bad"
-            >
-              Zerar progresso
-            </button>
-          ))}
+        <VideoSettings
+          slots={slots}
+          onSlotsChange={setSlots}
+          strict={canBeStrict ? strict : undefined}
+          onStrictChange={setStrict}
+          canReset={answered > 0}
+          onReset={restart}
+          canComplete={!done}
+          onCompleteAll={completeRemaining}
+          onClose={() => input.current?.focus()}
+        />
       </header>
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">

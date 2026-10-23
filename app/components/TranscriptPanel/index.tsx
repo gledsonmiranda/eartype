@@ -13,8 +13,8 @@
  * hard video.
  */
 
-import { useEffect, useRef, type ReactNode } from 'react';
-import { Check } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Check, Copy } from '@phosphor-icons/react';
 import { isRevealed, type SegmentOutcome } from '@/lib/practice/session';
 import type { Segment } from '@/types';
 
@@ -85,7 +85,7 @@ export function TranscriptPanel({
                 onClick={() => onSelect(index)}
                 // Reading is opt-in; tabbing through 279 lines is not.
                 tabIndex={-1}
-                className={`flex w-full gap-3 border-l-[3px] px-5 py-3 text-left text-sm ${
+                className={`flex w-full gap-3 border-l-[3px] py-3 pl-5 text-left text-sm ${revealed ? 'pr-12' : 'pr-5'} ${
                   isCurrent
                     ? 'border-accent bg-raised'
                     : 'border-transparent hover:bg-surface'
@@ -105,10 +105,68 @@ export function TranscriptPanel({
                 </span>
                 {!revealed && <span className="sr-only">trecho ainda não praticado</span>}
               </button>
+              {revealed && <CopyLine text={segment.referenceText} />}
             </li>
           );
         })}
       </ol>
     </aside>
   );
+}
+
+/** Puts a finished line on the clipboard — to paste into a translator. */
+function CopyLine({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      // Some embedded browsers refuse the async API; the old route still works there.
+      setCopied(copyWithSelection(text));
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      tabIndex={-1}
+      aria-label={copied ? 'copiado' : 'copiar trecho'}
+      title={copied ? 'Copiado' : 'Copiar'}
+      className={`absolute top-2 right-2 flex size-8 items-center justify-center rounded-sm hover:bg-raised ${
+        copied ? 'text-ok' : 'text-dim hover:text-fg'
+      }`}
+    >
+      {copied ? (
+        <Check size={16} weight="bold" aria-hidden="true" />
+      ) : (
+        <Copy size={16} aria-hidden="true" />
+      )}
+    </button>
+  );
+}
+
+function copyWithSelection(text: string): boolean {
+  const field = document.createElement('textarea');
+  field.value = text;
+  field.setAttribute('readonly', '');
+  field.style.position = 'fixed';
+  field.style.opacity = '0';
+  document.body.appendChild(field);
+  field.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+  }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  completeAll,
   countAttempt,
   isRevealed,
   firstPending,
@@ -117,5 +118,16 @@ describe('tally', () => {
 
   it('has no accuracy before anything is answered', () => {
     expect(tally(startSession(3)).accuracy).toBeNull();
+  });
+});
+
+describe('completeAll', () => {
+  it('marks open segments correct and keeps the answered ones', () => {
+    const session = recordOutcome(goTo(startSession(3), 1), 'skipped');
+    const completed = completeAll(countAttempt(session));
+
+    expect(completed.outcomes).toEqual(['correct', 'skipped', 'correct']);
+    expect(completed.attempts).toBe(0);
+    expect(isFinished(completed)).toBe(true);
   });
 });
