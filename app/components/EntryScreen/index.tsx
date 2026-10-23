@@ -13,6 +13,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { ArrowUpRight } from '@phosphor-icons/react';
+import { AppHeader } from '@/app/components/AppHeader';
 import { CaptionDrop } from '@/app/components/CaptionDrop';
 import { ProgressBackup } from '@/app/components/ProgressBackup';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
@@ -157,16 +158,7 @@ export function EntryScreen({ library, onStart }: EntryScreenProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex h-[72px] items-center gap-3 border-b border-line-soft px-6 sm:px-12">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
-          <path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0" />
-          <path d="M12 9a1.5 1.5 0 0 1 1.5 1.5" />
-        </svg>
-        <span className="font-display text-[22px] font-bold tracking-tight">eartype</span>
-        <span className="ml-4 hidden text-sm text-muted sm:inline">
-          O vídeo toca em trechos curtos, pausa, e você digita o que ouviu.
-        </span>
-      </header>
+      <AppHeader current="videos" />
 
       <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-14 px-6 py-12 sm:px-12">
         <section className="flex flex-col gap-4" aria-labelledby="new-video-title">

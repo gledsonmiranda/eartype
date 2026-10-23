@@ -16,6 +16,7 @@ import {
   type StoredProgress,
 } from '@/lib/practice/progress';
 import { goTo, recordOutcome, startSession } from '@/lib/practice/session';
+import { addWord, EMPTY_OVERLAY, loadOverlay, recordAnswer, saveOverlay } from '@/lib/vocabulary/words';
 import type { Segment } from '@/types';
 
 const VIDEO = 'dQw4w9WgXcQ';
@@ -147,9 +148,29 @@ describe('storage', () => {
     const backup = exportAll();
 
     items.clear();
-    expect(importAll(backup)).toEqual({ ok: true, count: 1 });
+    expect(importAll(backup)).toEqual({ ok: true, count: 1, vocabulary: true });
     expect(loadProgress(VIDEO)?.outcomes).toEqual({ '0': 'correct' });
     expect(loadSettings().slots).toBe(false);
+  });
+
+  it('carries the vocabulary in the backup and merges it in', () => {
+    let overlay = addWord(EMPTY_OVERLAY, { portuguese: 'chave', english: 'key', alternatives: [], category: 'Casa' }, 1);
+    overlay = recordAnswer(overlay, 'w_0001', true, '2026-10-01');
+    saveOverlay(overlay);
+    const backup = exportAll();
+
+    items.clear();
+    saveOverlay(recordAnswer(EMPTY_OVERLAY, 'w_0002', false, '2026-10-02'));
+    importAll(backup);
+
+    const merged = loadOverlay();
+    expect(merged.added.map((word) => word.english)).toEqual(['key']);
+    expect(Object.keys(merged.stats).sort()).toEqual(['w_0001', 'w_0002']);
+  });
+
+  it('refuses a backup whose vocabulary is corrupt', () => {
+    const backup = JSON.stringify({ app: 'eartype', v: 1, progress: {}, vocabulary: { v: 1, added: 'nope' } });
+    expect(importAll(backup)).toMatchObject({ ok: false });
   });
 
   it('keeps the newer record when both sides have the video', () => {
@@ -160,7 +181,7 @@ describe('storage', () => {
       progress: { [VIDEO]: stored({ outcomes: { '0': 'skipped' }, updatedAt: 100 }) },
     });
 
-    expect(importAll(older)).toEqual({ ok: true, count: 0 });
+    expect(importAll(older)).toEqual({ ok: true, count: 0, vocabulary: false });
     expect(loadProgress(VIDEO)?.outcomes).toEqual({ '0': 'correct' });
   });
 

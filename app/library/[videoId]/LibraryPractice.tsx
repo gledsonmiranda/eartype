@@ -23,7 +23,7 @@ export function LibraryPractice({
       segments={segments}
       captionKind={captionKind}
       title={title}
-      onLeave={() => router.push('/')}
+      onLeave={() => router.push('/videos')}
     />
   );
 }

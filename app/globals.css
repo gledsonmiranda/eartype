@@ -21,6 +21,25 @@
   --font-sans: var(--font-instrument), system-ui, sans-serif;
   --font-display: var(--font-bricolage), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* The microphone's "I'm listening": bars in the button, dots in the field. */
+  --animate-listening: listening 0.9s ease-in-out infinite;
+  @keyframes listening {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+  }
+  --animate-listening-dot: listening-dot 1.2s ease-in-out infinite;
+  @keyframes listening-dot {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-listening,
+  .animate-listening-dot {
+    animation: none;
+  }
 }
 
 /* Tailwind v4 resets buttons to the default cursor. */
