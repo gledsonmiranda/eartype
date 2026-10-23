@@ -13,7 +13,8 @@
  * hard video.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Check } from '@phosphor-icons/react';
 import { isRevealed, type SegmentOutcome } from '@/lib/practice/session';
 import type { Segment } from '@/types';
 
@@ -26,9 +27,9 @@ export type TranscriptPanelProps = {
   onSelect: (index: number) => void;
 };
 
-const MARKERS: Record<SegmentOutcome, { label: string; className: string }> = {
+const MARKERS: Record<SegmentOutcome, { label: ReactNode; className: string }> = {
   pending: { label: '', className: 'text-dim' },
-  correct: { label: '✓', className: 'text-ok' },
+  correct: { label: <Check size={14} weight="bold" className="inline" aria-hidden="true" />, className: 'text-ok' },
   accepted: { label: '~', className: 'text-warn' },
   skipped: { label: '·', className: 'text-dim' },
 };

@@ -6,6 +6,7 @@
  * colour-blind reader and a bad monitor alike.
  */
 
+import { ArrowRight } from '@phosphor-icons/react/ssr';
 import type { DiffResult, DiffToken, TokenStatus } from '@/types';
 
 const STYLES: Record<TokenStatus, string> = {
@@ -38,7 +39,8 @@ function Token({ token, showCorrection }: { token: DiffToken; showCorrection: bo
       </span>
       {correction !== null && (
         <span className="text-ok" title="o certo era">
-          →&nbsp;{correction}
+          <ArrowRight size={14} weight="bold" className="inline self-center" aria-hidden="true" />
+          {correction}
         </span>
       )}
       <span className="sr-only">({LABELS[token.status]})</span>
