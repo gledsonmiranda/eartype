@@ -205,12 +205,14 @@ function Setup({
 
   return (
     <section className="flex flex-col gap-8" aria-labelledby="setup-title">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
+      {/* No wrapping here: the voice text is longer, and a wrap would move the toggle when you switch. */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
           <h1 id="setup-title" className="font-display text-2xl font-semibold">
             Escolha uma categoria
           </h1>
-          <p className="text-sm text-muted">
+          {/* Room for the longer voice text, so the chips below stay put when you switch. */}
+          <p className="min-h-[3lh] text-sm text-muted sm:min-h-[2lh]">
             {mode === 'voice'
               ? 'A palavra aparece em português; você fala em inglês, confere o que foi entendido e aperta Enter.'
               : 'A palavra aparece em português; você digita em inglês e aperta Enter.'}

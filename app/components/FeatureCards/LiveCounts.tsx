@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { CircleHalf, ListBullets, SquaresFour } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
-import { answeredCount, listProgress } from '@/lib/practice/progress';
+import { answeredCount, listProgress, PROGRESS_CHANGED } from '@/lib/practice/progress';
 import { categoriesOf } from '@/lib/vocabulary/words';
 
 export const CHIP = 'inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-1 text-xs text-muted';
@@ -26,7 +26,11 @@ export function InProgressChip() {
       );
     refresh();
     window.addEventListener('storage', refresh);
-    return () => window.removeEventListener('storage', refresh);
+    window.addEventListener(PROGRESS_CHANGED, refresh);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener(PROGRESS_CHANGED, refresh);
+    };
   }, []);
 
   if (count === 0) return null;
