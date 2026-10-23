@@ -23,6 +23,16 @@ import {
   type YouTubePlayer,
 } from '@/lib/player/youtube-iframe';
 import {
+  answeredCount,
+  clearProgress,
+  fromStored,
+  loadProgress,
+  loadSettings,
+  saveProgress,
+  saveSettings,
+  toStored,
+} from '@/lib/practice/progress';
+import {
   countAttempt,
   firstPending,
   goTo as goToSegment,
@@ -80,6 +90,14 @@ export function PracticeScreen({
   // POC — the blanks-per-letter hint. On by default while it is being tried;
   // off brings back the plain field and the live diff underneath it.
   const [slots, setSlots] = useState(true);
+  // What was saved is only read after mount — the library page renders this on
+  // the server, where there is no storage. Nothing plays or saves until then.
+  const [restored, setRestored] = useState(false);
+  // A saved run waiting for "continuar": while set, nothing autoplays.
+  const [resumeOffer, setResumeOffer] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  // Bumped on reset, so segment 1 plays again even when it was already current.
+  const [restartKey, setRestartKey] = useState(0);
 
   const player = useRef<YouTubePlayer | null>(null);
   const playback = useRef<Playback | null>(null);
@@ -106,12 +124,43 @@ export function PracticeScreen({
     });
   }, [segment]);
 
+  // RF-07 — pick up where you left off. A `t=` in the URL is an explicit
+  // place to start, so it skips the question but keeps what was answered.
+  useEffect(() => {
+    const settings = loadSettings();
+    const stored = loadProgress(videoId);
+    /* eslint-disable react-hooks/set-state-in-effect -- storage only exists after mount */
+    setSlots(settings.slots);
+    setStrict(settings.strict);
+    if (stored !== null && answeredCount(stored) > 0) {
+      const saved = fromStored(stored, segments);
+      if (startIndex > 0) setSession(goToSegment(saved, startIndex));
+      else {
+        setSession(saved);
+        setResumeOffer(!isFinished(saved));
+      }
+    }
+    setRestored(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [videoId, segments, startIndex]);
+
+  useEffect(() => {
+    if (restored) saveSettings({ v: 1, slots, strict });
+  }, [restored, slots, strict]);
+
+  // Nothing answered, nothing worth keeping — opening a video and leaving
+  // should not leave a record behind.
+  useEffect(() => {
+    if (!restored || session.outcomes.every((outcome) => outcome === 'pending')) return;
+    saveProgress(videoId, toStored(session, segments));
+  }, [restored, session, segments, videoId]);
+
   // Autoplay each new segment, and stop polling when the screen goes away.
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !restored || resumeOffer) return;
     play();
     return () => playback.current?.cancel();
-  }, [play, ready]);
+  }, [play, ready, restored, resumeOffer, restartKey]);
 
   useEffect(() => {
     input.current?.focus();
@@ -130,6 +179,16 @@ export function PracticeScreen({
    * open. Starting from a `t=` in the URL leaves earlier segments pending,
    * and this is what brings them back instead of ending the run early.
    */
+  /** Forgets this video's run and starts again from segment 1, blurred. */
+  const restart = () => {
+    clearProgress(videoId);
+    setResumeOffer(false);
+    setConfirmingReset(false);
+    setShowAll(false);
+    moveWith(() => startSession(segments.length));
+    setRestartKey((current) => current + 1);
+  };
+
   const advance = () =>
     moveWith((current) => {
       const at = current.index + 1;
@@ -297,6 +356,38 @@ export function PracticeScreen({
             Modo estrito
           </label>
         )}
+        {answered > 0 &&
+          (confirmingReset ? (
+            <div role="alertdialog" aria-label="confirmar zerar progresso" className="flex min-h-11 items-center gap-2 text-sm">
+              <span className="text-fg">Zerar o progresso deste vídeo?</span>
+              <button
+                type="button"
+                onClick={restart}
+                autoFocus
+                className="rounded-sm bg-bad px-3 py-1 font-medium text-bg"
+              >
+                zerar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmingReset(false);
+                  input.current?.focus();
+                }}
+                className="rounded-sm border border-line px-3 py-1 text-fg"
+              >
+                cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingReset(true)}
+              className="flex min-h-11 items-center text-sm whitespace-nowrap text-muted hover:text-bad"
+            >
+              Zerar progresso
+            </button>
+          ))}
       </header>
 
       <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -333,7 +424,7 @@ export function PracticeScreen({
                 {counts.correct} de {session.total} de primeira · {counts.accepted} aceitos com erro ·{' '}
                 {counts.skipped} revelados
               </p>
-              <div>
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={onLeave}
@@ -341,6 +432,27 @@ export function PracticeScreen({
                 >
                   Praticar outro vídeo
                 </button>
+                <Action onClick={restart}>Recomeçar</Action>
+              </div>
+            </section>
+          ) : resumeOffer ? (
+            <section className="mx-auto flex w-full max-w-[720px] flex-col gap-4 rounded-md border border-line bg-surface p-8">
+              <h2 className="font-display text-2xl font-bold">Continuar de onde parou?</h2>
+              <p className="text-sm text-muted">
+                Você parou no trecho {session.index + 1} de {session.total} · {answered}{' '}
+                {answered === 1 ? 'feito' : 'feitos'}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setResumeOffer(false)}
+                  autoFocus
+                  className="flex h-11 items-center gap-2 rounded-sm bg-accent px-6 text-[15px] font-semibold text-bg hover:brightness-110"
+                >
+                  Continuar
+                  <span className="font-mono text-xs opacity-70">↵</span>
+                </button>
+                <Action onClick={restart}>Recomeçar</Action>
               </div>
             </section>
           ) : (
@@ -483,7 +595,10 @@ export function PracticeScreen({
           currentIndex={session.index}
           showAll={showAll}
           onToggleShowAll={() => setShowAll((current) => !current)}
-          onSelect={(index) => moveWith((current) => goToSegment(current, index))}
+          onSelect={(index) => {
+            setResumeOffer(false);
+            moveWith((current) => goToSegment(current, index));
+          }}
         />
       </div>
 
