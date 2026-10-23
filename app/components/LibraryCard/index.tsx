@@ -12,6 +12,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
+import { Check, Trash } from '@phosphor-icons/react';
 import { removeFromLibrary } from '@/app/library/actions';
 import {
   answeredCount,
@@ -78,7 +79,14 @@ export function LibraryCard({ videoId, title, deletable }: LibraryCardProps) {
           <h2 className="text-base font-semibold text-fg">{title}</h2>
           {answered > 0 && (
             <span className="font-mono text-xs text-muted">
-              {finished ? '✓ concluído' : `${answered} / ${total}`}
+              {finished ? (
+                <span className="inline-flex items-center gap-1">
+                  <Check size={12} weight="bold" aria-hidden="true" />
+                  concluído
+                </span>
+              ) : (
+                `${answered} / ${total}`
+              )}
             </span>
           )}
         </div>
@@ -95,9 +103,7 @@ export function LibraryCard({ videoId, title, deletable }: LibraryCardProps) {
           title="remover da biblioteca"
           className="absolute top-2 right-2 rounded-sm bg-bg/80 p-2 text-muted hover:text-bad"
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Trash size={16} weight="bold" aria-hidden="true" />
         </button>
       )}
 

@@ -12,6 +12,7 @@
  */
 
 import { useState, type ReactNode } from 'react';
+import { ArrowUpRight } from '@phosphor-icons/react';
 import { CaptionDrop } from '@/app/components/CaptionDrop';
 import { ProgressBackup } from '@/app/components/ProgressBackup';
 import { CaptionParseError, parseCaptions } from '@/lib/captions/parse-captions';
@@ -211,7 +212,7 @@ export function EntryScreen({ library, onStart }: EntryScreenProps) {
                         rel="noopener noreferrer"
                         className="font-semibold text-accent underline underline-offset-4 hover:brightness-110"
                       >
-                        {site.name} ↗
+                        {site.name} <ArrowUpRight size={14} weight="bold" className="inline align-[-2px]" aria-hidden="true" />
                       </a>
                     ))}
                   </span>

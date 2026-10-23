@@ -6,6 +6,7 @@
  */
 
 import { useRef, useState } from 'react';
+import { DownloadSimple, UploadSimple } from '@phosphor-icons/react';
 import { exportAll, importAll, PROGRESS_CHANGED } from '@/lib/practice/progress';
 
 const BUTTON =
@@ -48,10 +49,7 @@ export function ProgressBackup() {
         {/* On a phone the labels go and the row says what the icons are about. */}
         <span className="text-sm text-muted sm:hidden">Progresso:</span>
         <button type="button" onClick={download} aria-label="Exportar progresso" title="Exportar progresso" className={BUTTON}>
-          {/* tray with an arrow out */}
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
-          </svg>
+          <UploadSimple size={18} weight="bold" aria-hidden="true" />
           <span className="hidden sm:inline">Exportar progresso</span>
         </button>
         <button
@@ -61,10 +59,7 @@ export function ProgressBackup() {
           title="Importar progresso"
           className={BUTTON}
         >
-          {/* tray with an arrow in */}
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3v12M7 10l5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
-          </svg>
+          <DownloadSimple size={18} weight="bold" aria-hidden="true" />
           <span className="hidden sm:inline">Importar progresso</span>
         </button>
       </div>

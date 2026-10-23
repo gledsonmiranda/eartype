@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CaretLeft, Check } from '@phosphor-icons/react';
 import { AddToLibrary } from '@/app/components/AddToLibrary';
 import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
 import { SlotInput } from '@/app/components/SlotInput';
@@ -310,9 +311,7 @@ export function PracticeScreen({
           onClick={onLeave}
           className="flex min-h-11 items-center gap-2 text-[15px] text-muted hover:text-fg"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
+          <CaretLeft size={20} weight="bold" aria-hidden="true" />
           Biblioteca
         </button>
         {title !== undefined && (
@@ -461,7 +460,12 @@ export function PracticeScreen({
                 <span className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">
                   {result !== null
                     ? isPerfect(result)
-                      ? '✓ acertou'
+                      ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Check size={14} weight="bold" aria-hidden="true" />
+                          acertou
+                        </span>
+                      )
                       : `Correção · trecho ${session.index + 1}`
                     : `Ouça e digite · trecho ${session.index + 1}`}
                 </span>

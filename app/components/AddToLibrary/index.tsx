@@ -8,6 +8,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useTransition } from 'react';
+import { Check } from '@phosphor-icons/react';
 import { addToLibrary, libraryStatus } from '@/app/library/actions';
 import type { CaptionKind, Cue } from '@/types';
 
@@ -40,7 +41,7 @@ export function AddToLibrary({ videoId, captionKind, cues }: AddToLibraryProps) 
   if (done) {
     return (
       <Link href="/" className="whitespace-nowrap text-ok underline underline-offset-4">
-        na biblioteca ✓
+        na biblioteca <Check size={14} weight="bold" className="inline align-[-2px]" aria-hidden="true" />
       </Link>
     );
   }
