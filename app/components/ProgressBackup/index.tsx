@@ -9,7 +9,7 @@ import { useRef, useState } from 'react';
 import { exportAll, importAll, PROGRESS_CHANGED } from '@/lib/practice/progress';
 
 const BUTTON =
-  'flex h-10 items-center gap-2 rounded-sm border border-line bg-surface px-4 text-sm font-medium text-fg hover:border-accent hover:text-accent';
+  'flex h-10 min-w-10 items-center justify-center gap-2 rounded-sm border border-line bg-surface px-3 text-sm sm:px-4 font-medium text-fg hover:border-accent hover:text-accent';
 
 export function ProgressBackup() {
   const file = useRef<HTMLInputElement>(null);
@@ -43,21 +43,29 @@ export function ProgressBackup() {
   };
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={download} className={BUTTON}>
+    <div className="flex flex-col items-start gap-2 sm:items-end">
+      <div className="flex items-center gap-3">
+        {/* On a phone the labels go and the row says what the icons are about. */}
+        <span className="text-sm text-muted sm:hidden">Progresso:</span>
+        <button type="button" onClick={download} aria-label="Exportar progresso" title="Exportar progresso" className={BUTTON}>
           {/* tray with an arrow out */}
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
           </svg>
-          Exportar progresso
+          <span className="hidden sm:inline">Exportar progresso</span>
         </button>
-        <button type="button" onClick={() => file.current?.click()} className={BUTTON}>
+        <button
+          type="button"
+          onClick={() => file.current?.click()}
+          aria-label="Importar progresso"
+          title="Importar progresso"
+          className={BUTTON}
+        >
           {/* tray with an arrow in */}
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 3v12M7 10l5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
           </svg>
-          Importar progresso
+          <span className="hidden sm:inline">Importar progresso</span>
         </button>
       </div>
       <input

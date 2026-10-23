@@ -6,3 +6,4 @@
 - [ ] Add button to download subtitles srt
 - [ ] store when the user stopped in each video.
 - [ ] add google analytics
+- [ ] verify if is possible to clear the hud of youtube frame
