@@ -59,7 +59,7 @@ export function useSpeech() {
 
   useEffect(() => () => current.current?.abort(), []);
 
-  /** Listens for one answer and hands back the recognizer's guesses, best first. */
+  /** Listens for one answer and hands back what the recognizer heard. */
   const listen = useCallback((onGuesses: (guesses: string[]) => void) => {
     const Constructor = recognitionConstructor();
     if (Constructor === null) return;
@@ -69,7 +69,7 @@ export function useSpeech() {
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.continuous = false;
-    recognition.maxAlternatives = 5;
+    recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
       const first = event.results[0];

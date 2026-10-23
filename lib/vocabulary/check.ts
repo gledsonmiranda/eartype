@@ -4,8 +4,8 @@
  * strict about spelling itself: a one-letter slip is shown as "almost" so you
  * see how close you were, but it still counts as a miss.
  *
- * Spoken answers go through the same rules: the recognizer hands back a few
- * guesses at what it heard, and the best-scoring one is the answer.
+ * A spoken answer lands in the same field first, so it is checked like any
+ * typed one — after you have seen it and confirmed it.
  */
 
 import { editDistance } from '@/lib/correction/diff';
@@ -47,21 +47,3 @@ export function checkAnswer(word: Pick<Word, 'english' | 'alternatives'>, typed:
   return close ? 'almost' : 'wrong';
 }
 
-const RANK: Record<Verdict, number> = { right: 0, almost: 1, wrong: 2 };
-
-/**
- * The recognizer's guesses, best first. The answer is the guess that scores
- * best — if any of them is the word, you said the word — and on a tie, the
- * recognizer's own favorite.
- */
-export function checkSpoken(
-  word: Pick<Word, 'english' | 'alternatives'>,
-  guesses: readonly string[],
-): { verdict: Verdict; heard: string } {
-  let best: { verdict: Verdict; heard: string } = { verdict: 'wrong', heard: guesses[0]?.trim() ?? '' };
-  for (const guess of guesses) {
-    const verdict = checkAnswer(word, guess);
-    if (RANK[verdict] < RANK[best.verdict]) best = { verdict, heard: guess.trim() };
-  }
-  return best;
-}

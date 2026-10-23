@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptedAnswers, checkAnswer, checkSpoken, normalizeAnswer } from '@/lib/vocabulary/check';
+import { acceptedAnswers, checkAnswer, normalizeAnswer } from '@/lib/vocabulary/check';
 
 const sofa = { english: 'sofa', alternatives: ['couch'] };
 const fork = { english: 'fork', alternatives: [] };
@@ -67,24 +67,5 @@ describe('checkAnswer', () => {
 describe('acceptedAnswers', () => {
   it('drops duplicates once normalized', () => {
     expect(acceptedAnswers({ english: 'Fridge', alternatives: ['fridge', 'the fridge'] })).toEqual(['fridge']);
-  });
-});
-
-describe('checkSpoken', () => {
-  it('takes the best of the recognizer guesses', () => {
-    expect(checkSpoken(sofa, ['so far', 'sofa'])).toEqual({ verdict: 'right', heard: 'sofa' });
-    expect(checkSpoken(sofa, ['Couch.'])).toEqual({ verdict: 'right', heard: 'Couch.' });
-  });
-
-  it("keeps the recognizer's favorite when nothing fits", () => {
-    expect(checkSpoken(fork, ['four', 'fur'])).toEqual({ verdict: 'wrong', heard: 'four' });
-  });
-
-  it('marks a near miss as almost', () => {
-    expect(checkSpoken(fork, ['folk', 'fort'])).toEqual({ verdict: 'almost', heard: 'folk' });
-  });
-
-  it('handles no guesses at all', () => {
-    expect(checkSpoken(fork, [])).toEqual({ verdict: 'wrong', heard: '' });
   });
 });

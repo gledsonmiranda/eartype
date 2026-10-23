@@ -2,16 +2,17 @@
 
 /**
  * Vocabulary practice: pick a category, then a Portuguese word at a time —
- * type the English (or say it), Enter to check, Enter again for the next one.
- * Every answer is saved to the word's stats as you go, so stopping loses
- * nothing. Typing or speaking is one switch that stays where you leave it.
+ * type the English, Enter to check, Enter again for the next one. In voice
+ * mode the field is the microphone's alone: what it heard lands there, you
+ * speak again if it misheard, and you are the one who confirms. Every answer
+ * is saved to the word's stats as you go, so stopping loses nothing.
  */
 
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, Keyboard, Microphone, Stop, X } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
-import { checkAnswer, checkSpoken, type Verdict } from '@/lib/vocabulary/check';
+import { checkAnswer, type Verdict } from '@/lib/vocabulary/check';
 import { DEFAULT_MODE, loadMode, saveMode, type AnswerMode } from '@/lib/vocabulary/mode';
 import {
   ALL_CATEGORIES,
@@ -76,12 +77,6 @@ export function VocabularyPractice() {
 
   const start = (chosen: Word[]) => setSession(startVocabSession(chosen));
 
-  const record = (word: Word, typed: string, verdict: Verdict) => {
-    if (session === null) return;
-    setSession(answerWord(session, typed, verdict));
-    update((overlay) => recordAnswer(overlay, word.id, verdict === 'right'));
-  };
-
   if (session === null) {
     return (
       <Setup
@@ -118,13 +113,11 @@ export function VocabularyPractice() {
       speech={speech}
       onAnswer={(typed) => {
         const word = currentWord(session);
-        if (word !== null) record(word, typed, checkAnswer(word, typed));
-      }}
-      onSpoken={(guesses) => {
-        const word = currentWord(session);
         if (word === null) return;
-        const { verdict, heard } = checkSpoken(word, guesses);
-        record(word, heard, verdict);
+        speech.stop();
+        const verdict = checkAnswer(word, typed);
+        setSession(answerWord(session, typed, verdict));
+        update((overlay) => recordAnswer(overlay, word.id, verdict === 'right'));
       }}
       onNext={() => {
         speech.stop();
@@ -219,7 +212,7 @@ function Setup({
           </h1>
           <p className="text-sm text-muted">
             {mode === 'voice'
-              ? 'A palavra aparece em português; você fala em inglês no microfone.'
+              ? 'A palavra aparece em português; você fala em inglês, confere o que foi entendido e aperta Enter.'
               : 'A palavra aparece em português; você digita em inglês e aperta Enter.'}
           </p>
         </div>
@@ -266,7 +259,6 @@ function Play({
   toggle,
   speech,
   onAnswer,
-  onSpoken,
   onNext,
   onStop,
 }: {
@@ -275,7 +267,6 @@ function Play({
   toggle: ReactNode;
   speech: ReturnType<typeof useSpeech>;
   onAnswer: (typed: string) => void;
-  onSpoken: (guesses: string[]) => void;
   onNext: () => void;
   onStop: () => void;
 }) {
@@ -283,27 +274,22 @@ function Play({
   const answered = isAnswered(session);
   const answer = answered ? session.answers[session.index] : null;
   const [typed, setTyped] = useState('');
+  const input = useRef<HTMLInputElement>(null);
   const voice = mode === 'voice';
-  const { listening, listen } = speech;
+  const { listening, error } = speech;
 
-  // In voice mode nothing holds the focus, so Enter and Space are caught on
-  // the page: talk, then Enter again for the next word. Keys aimed at a
-  // button are left to the button.
-  useEffect(() => {
-    if (!voice) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLInputElement) return;
-      if (event.key === 'Enter' && answered) {
-        event.preventDefault();
-        onNext();
-      } else if ((event.key === 'Enter' || event.key === ' ') && !answered && !listening) {
-        event.preventDefault();
-        listen(onSpoken);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [voice, answered, listening, listen, onSpoken, onNext]);
+  /**
+   * What the recognizer heard goes into the field — never straight in as the
+   * answer. Speaking again clears it first, so what you see is always this
+   * take; in voice mode the keyboard can't edit it.
+   */
+  const listen = () => {
+    setTyped('');
+    speech.listen((guesses) => {
+      setTyped(guesses[0].trim().replace(/[.!?]+$/, ''));
+      input.current?.focus();
+    });
+  };
 
   if (word === null) return null;
 
@@ -341,73 +327,102 @@ function Play({
           else if (typed.trim() !== '') onAnswer(typed);
         }}
       >
-        {voice && !answered ? (
-          <VoiceAnswer listening={listening} error={speech.error} onListen={() => listen(onSpoken)} onCancel={speech.stop} />
-        ) : (
-          <label className="flex flex-col gap-2 text-sm">
-            <span className="font-semibold">{voice ? 'Você disse' : 'Em inglês'}</span>
-            <input
-              value={answered ? (answer?.typed ?? typed) : typed}
-              onChange={(event) => setTyped(event.target.value)}
-              readOnly={answered}
-              autoFocus={!voice}
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              lang="en"
-              placeholder="digite e aperte Enter"
-              className={`h-14 rounded-sm border bg-bg px-4 font-mono text-lg text-fg outline-none placeholder:text-dim ${
-                answer === null ? 'border-line focus:border-accent' : VERDICT_STYLE[answer.verdict].className
-              }`}
-            />
+        <div className="flex flex-col gap-2 text-sm">
+          <label htmlFor="vocabulary-answer" className="font-semibold">
+            Em inglês
           </label>
+          <div className="flex gap-2">
+            <div className="relative flex min-w-0 flex-1">
+              <input
+                id="vocabulary-answer"
+                ref={input}
+                value={answered ? (answer?.typed ?? typed) : typed}
+                onChange={(event) => setTyped(event.target.value)}
+                onKeyDown={(event) => {
+                  // The field takes no typing in voice mode, so Space means
+                  // "listen (again)" — or, mid-take, "stop listening".
+                  if (voice && !answered && event.key === ' ') {
+                    event.preventDefault();
+                    if (listening) speech.stop();
+                    else listen();
+                  }
+                }}
+                readOnly={answered || voice}
+                autoFocus
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                lang="en"
+                placeholder={listening ? '' : voice ? 'toque no microfone e fale' : 'digite e aperte Enter'}
+                className={`h-14 w-full rounded-sm border bg-bg px-4 font-mono text-lg text-fg outline-none placeholder:text-dim ${
+                  listening
+                    ? 'border-ok'
+                    : answer === null
+                      ? 'border-line focus:border-accent'
+                      : VERDICT_STYLE[answer.verdict].className
+                }`}
+              />
+              {listening && (
+                <span className="pointer-events-none absolute inset-0 flex items-center px-4 font-mono text-lg text-ok" aria-hidden="true">
+                  ouvindo
+                  {[0, 0.2, 0.4].map((delay) => (
+                    <span key={delay} className="animate-listening-dot" style={{ animationDelay: `${delay}s` }}>
+                      .
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+            {voice && !answered && (
+              <button
+                type="button"
+                onClick={listening ? speech.stop : listen}
+                aria-label={listening ? 'Parar de ouvir' : 'Falar a resposta'}
+                aria-pressed={listening}
+                title={listening ? 'Parar de ouvir' : 'Falar a resposta (Espaço)'}
+                className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-sm border-2 hover:brightness-110 ${
+                  listening ? 'border-ok bg-ok/15 text-ok' : 'border-accent bg-raised text-accent'
+                }`}
+              >
+                <Microphone size={listening ? 22 : 26} weight="bold" aria-hidden="true" />
+                {/* Green and moving: the mic is open. */}
+                {listening && (
+                  <span className="flex h-2 items-center gap-0.5" aria-hidden="true">
+                    {[0, 0.15, 0.3, 0.45].map((delay) => (
+                      <span
+                        key={delay}
+                        className="h-full w-[3px] origin-center animate-listening rounded-full bg-ok"
+                        style={{ animationDelay: `${delay}s` }}
+                      />
+                    ))}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {voice && !answered && (
+          <span className={`text-sm ${error !== null && !listening ? 'text-bad' : 'text-muted'}`} role="status">
+            {listening
+              ? 'Ouvindo… fale a palavra em inglês'
+              : error !== null
+                ? SPEECH_ERRORS[error]
+                : typed === ''
+                  ? 'Toque no microfone (ou Espaço) e fale. O que for entendido aparece no campo.'
+                  : 'Se estiver certo, aperte Enter. Se não, toque no microfone e fale de novo.'}
+          </span>
         )}
 
         {answer !== null && <Feedback verdict={answer.verdict} word={word} />}
 
-        {(answered || !voice) && (
-          <button type="submit" className={`${PRIMARY} self-start`} disabled={!answered && typed.trim() === ''}>
-            {answered ? 'Próxima' : 'Conferir'}
-            <ArrowRight size={18} weight="bold" aria-hidden="true" />
-          </button>
-        )}
+        <button type="submit" className={`${PRIMARY} self-start`} disabled={!answered && (listening || typed.trim() === '')}>
+          {answered ? 'Próxima' : 'Conferir'}
+          <ArrowRight size={18} weight="bold" aria-hidden="true" />
+        </button>
       </form>
     </section>
-  );
-}
-
-function VoiceAnswer({
-  listening,
-  error,
-  onListen,
-  onCancel,
-}: {
-  listening: boolean;
-  error: SpeechError | null;
-  onListen: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-line-strong px-6 py-8 text-center">
-      <button
-        type="button"
-        onClick={listening ? onCancel : onListen}
-        aria-label={listening ? 'Parar de ouvir' : 'Falar a resposta'}
-        aria-pressed={listening}
-        className={`flex h-20 w-20 items-center justify-center rounded-full border-2 ${
-          listening
-            ? 'animate-pulse border-bad bg-raised text-bad'
-            : 'border-accent bg-raised text-accent hover:brightness-110'
-        }`}
-      >
-        <Microphone size={36} weight="bold" aria-hidden="true" />
-      </button>
-      <span className="text-sm font-medium" role="status">
-        {listening ? 'Ouvindo… fale a palavra em inglês' : 'Toque no microfone ou aperte Espaço e fale'}
-      </span>
-      {error !== null && !listening && <span className="text-sm text-bad">{SPEECH_ERRORS[error]}</span>}
-    </div>
   );
 }
 
