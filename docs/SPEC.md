@@ -21,7 +21,7 @@ The goal is not to memorise the video, it is to **train listening/comprehension*
 ### 1.2 Out of scope (v1)
 - User accounts, cross-device sync, a database backend.
 - Speech recognition (speaking instead of typing).
-- Translation to Portuguese, a built-in dictionary, flashcards/SRS.
+- A built-in dictionary, flashcards/SRS. (Translation is in, narrowly: the translate button on a *revealed* line in the transcript panel shows its Portuguese translation from Google Translate — never for a line still blurred.)
 - Languages other than English.
 - Sources other than YouTube (Vimeo, local files, streaming services).
 - Native mobile (a responsive layout is desirable, but typing long text on a phone is not the use case).
