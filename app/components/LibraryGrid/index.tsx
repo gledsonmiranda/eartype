@@ -4,7 +4,6 @@
  */
 
 import { LibraryCard } from '@/app/components/LibraryCard';
-import { ProgressBackup } from '@/app/components/ProgressBackup';
 import type { LibraryEntry } from '@/lib/library/catalog';
 
 export type LibraryGridProps = {
@@ -14,23 +13,22 @@ export type LibraryGridProps = {
 };
 
 export function LibraryGrid({ entries, writable }: LibraryGridProps) {
+  if (entries.length === 0) {
+    return (
+      <p className="rounded-md border border-dashed border-line-strong p-6 text-sm text-muted">
+        Nenhum vídeo ainda. Comece um vídeo novo abaixo e use “adicionar à biblioteca” na tela de
+        prática — da próxima vez ele abre direto daqui.
+      </p>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      {entries.length === 0 ? (
-        <p className="rounded-md border border-dashed border-line-strong p-6 text-sm text-muted">
-          Nenhum vídeo ainda. Comece um vídeo novo abaixo e use “adicionar à biblioteca” na tela de
-          prática — da próxima vez ele abre direto daqui.
-        </p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map((entry) => (
-            <li key={entry.videoId}>
-              <LibraryCard videoId={entry.videoId} title={entry.title} deletable={writable} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <ProgressBackup />
-    </div>
+    <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {entries.map((entry) => (
+        <li key={entry.videoId}>
+          <LibraryCard videoId={entry.videoId} title={entry.title} deletable={writable} />
+        </li>
+      ))}
+    </ul>
   );
 }

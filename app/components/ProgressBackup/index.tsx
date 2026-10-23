@@ -8,6 +8,9 @@
 import { useRef, useState } from 'react';
 import { exportAll, importAll, PROGRESS_CHANGED } from '@/lib/practice/progress';
 
+const BUTTON =
+  'flex h-10 items-center gap-2 rounded-sm border border-line bg-surface px-4 text-sm font-medium text-fg hover:border-accent hover:text-accent';
+
 export function ProgressBackup() {
   const file = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -40,17 +43,23 @@ export function ProgressBackup() {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted">
-      <button type="button" onClick={download} className="underline underline-offset-4 hover:text-fg">
-        Exportar progresso
-      </button>
-      <button
-        type="button"
-        onClick={() => file.current?.click()}
-        className="underline underline-offset-4 hover:text-fg"
-      >
-        Importar
-      </button>
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={download} className={BUTTON}>
+          {/* tray with an arrow out */}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+          </svg>
+          Exportar progresso
+        </button>
+        <button type="button" onClick={() => file.current?.click()} className={BUTTON}>
+          {/* tray with an arrow in */}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 3v12M7 10l5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />
+          </svg>
+          Importar progresso
+        </button>
+      </div>
       <input
         ref={file}
         type="file"
@@ -63,7 +72,7 @@ export function ProgressBackup() {
         }}
       />
       {message !== null && (
-        <span role="status" className={message.ok ? 'text-ok' : 'text-warn'}>
+        <span role="status" className={`text-sm ${message.ok ? 'text-ok' : 'text-warn'}`}>
           {message.text}
         </span>
       )}
