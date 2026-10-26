@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Vocabulary practice: pick a category, then a Portuguese word at a time —
- * type the English, Enter to check, Enter again for the next one. In voice
+ * Vocabulary practice: pick a category, then a deck of cards, a Portuguese
+ * word on each front — type the English, Enter to check and the card flips
+ * to the answer, Enter (or a tap on it) for the next one. Everything sits on
+ * the card, so on a phone it all fits above the keyboard. In voice
  * mode the field is the microphone's alone: what it heard lands there, you
  * speak again if it misheard, and you are the one who confirms. Every answer
  * is saved to the word's stats as you go, so stopping loses nothing.
@@ -10,7 +12,7 @@
 
 import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Keyboard, Microphone, Stop, X } from '@phosphor-icons/react';
+import { ArrowRight, Check, Keyboard, Microphone, X } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { checkAnswer, type Verdict } from '@/lib/vocabulary/check';
 import { DEFAULT_MODE, loadMode, saveMode, type AnswerMode } from '@/lib/vocabulary/mode';
@@ -35,10 +37,10 @@ const PRIMARY =
 const SECONDARY =
   'flex h-11 items-center justify-center gap-2 rounded-sm border border-line bg-surface px-5 text-sm font-medium text-fg hover:border-accent hover:text-accent';
 
-const VERDICT_STYLE: Record<Verdict, { label: string; className: string }> = {
-  right: { label: 'Certo', className: 'border-ok text-ok' },
-  almost: { label: 'Quase', className: 'border-warn text-warn' },
-  wrong: { label: 'Errado', className: 'border-bad text-bad' },
+const VERDICT_STYLE: Record<Verdict, { label: string; text: string; border: string }> = {
+  right: { label: 'Certo', text: 'text-ok', border: 'border-ok' },
+  almost: { label: 'Quase', text: 'text-warn', border: 'border-warn' },
+  wrong: { label: 'Errado', text: 'text-bad', border: 'border-bad' },
 };
 
 /** Another tab switching the mode. */
@@ -73,7 +75,9 @@ export function VocabularyPractice() {
 
   // A saved "voice" in a browser that can't do it falls back to typing.
   const effectiveMode: AnswerMode = mode === 'voice' && speech.supported === false ? 'type' : mode;
-  const toggle = <ModeToggle mode={effectiveMode} voiceSupported={speech.supported} onMode={chooseMode} />;
+  const toggle = (compact: boolean) => (
+    <ModeToggle mode={effectiveMode} voiceSupported={speech.supported} compact={compact} onMode={chooseMode} />
+  );
 
   const start = (chosen: Word[]) => setSession(startVocabSession(chosen));
 
@@ -84,7 +88,7 @@ export function VocabularyPractice() {
         ready={ready}
         category={category}
         mode={effectiveMode}
-        toggle={toggle}
+        toggle={toggle(false)}
         onCategory={setCategory}
         onStart={() => start(wordsIn(words, category))}
       />
@@ -109,7 +113,7 @@ export function VocabularyPractice() {
       key={session.index}
       session={session}
       mode={effectiveMode}
-      toggle={toggle}
+      toggle={toggle(true)}
       speech={speech}
       onAnswer={(typed) => {
         const word = currentWord(session);
@@ -133,13 +137,16 @@ export function VocabularyPractice() {
 
 // ---------------------------------------------------------------------------
 
+/** `compact` is the in-game version: icons only, so it fits beside the deck on a phone. */
 function ModeToggle({
   mode,
   voiceSupported,
+  compact,
   onMode,
 }: {
   mode: AnswerMode;
   voiceSupported: boolean | null;
+  compact: boolean;
   onMode: (mode: AnswerMode) => void;
 }) {
   const options = [
@@ -158,19 +165,21 @@ function ModeToggle({
               type="button"
               role="radio"
               aria-checked={active}
+              aria-label={compact ? label : undefined}
+              title={compact ? (disabled ? 'Responder por voz precisa do Chrome ou do Edge' : label) : undefined}
               disabled={disabled}
               onClick={() => onMode(value)}
-              className={`flex items-center gap-2 rounded-sm px-4 py-1.5 text-sm font-medium ${
+              className={`flex items-center gap-2 rounded-sm text-sm font-medium ${compact ? 'h-9 w-9 justify-center' : 'px-4 py-1.5'} ${
                 active ? 'bg-raised text-accent' : 'text-muted hover:text-accent'
               } disabled:cursor-not-allowed disabled:text-dim disabled:hover:text-dim`}
             >
-              <Icon size={16} weight="bold" aria-hidden="true" />
-              {label}
+              <Icon size={compact ? 18 : 16} weight="bold" aria-hidden="true" />
+              {!compact && label}
             </button>
           );
         })}
       </div>
-      {voiceSupported === false && (
+      {voiceSupported === false && !compact && (
         <span className="text-xs text-dim">Responder por voz precisa do Chrome ou do Edge.</span>
       )}
     </div>
@@ -295,161 +304,227 @@ function Play({
 
   if (word === null) return null;
 
-  const position = session.index + 1;
-  const total = session.queue.length;
+  const remaining = session.queue.length - session.answers.length;
+  // The cards still under this one, drawn as up to two edges peeking out.
+  const below = Math.min(session.queue.length - session.index - 1, 2);
+  const style = answer === null ? null : VERDICT_STYLE[answer.verdict];
 
   return (
-    <section className="flex flex-col gap-8" aria-label="Praticando">
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="h-1.5 min-w-32 flex-1 overflow-hidden rounded-full bg-line" aria-hidden="true">
-          <div className="h-full bg-accent" style={{ width: `${(session.answers.length / total) * 100}%` }} />
-        </div>
-        <span className="font-mono text-sm text-muted">
-          {position} / {total}
+    <section className="mx-auto flex w-full max-w-lg flex-col gap-4" aria-label="Praticando">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onStop}
+          aria-label="Parar"
+          title="Parar"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm text-muted hover:text-accent"
+        >
+          <X size={20} weight="bold" aria-hidden="true" />
+        </button>
+        <span className="flex-1 text-center text-sm text-muted">
+          <span className="font-mono text-fg">{remaining}</span> {remaining === 1 ? 'carta restante' : 'cartas restantes'}
         </span>
         {toggle}
-        <button type="button" onClick={onStop} className={SECONDARY}>
-          <Stop size={16} weight="bold" aria-hidden="true" />
-          Parar
-        </button>
       </div>
 
-      <div className="flex flex-col items-center gap-2 rounded-md border border-line bg-surface px-6 py-12 text-center">
-        <span className="text-xs font-semibold tracking-[0.08em] text-muted uppercase">{word.category}</span>
-        <span className="font-display text-4xl font-semibold break-words sm:text-5xl" lang="pt-BR">
-          {word.portuguese}
-        </span>
-      </div>
-
+      {/* One form for both faces: Enter checks on the front and, with the field still focused, deals the next card on the back. */}
       <form
-        className="flex flex-col gap-4"
+        className="relative pb-4"
         onSubmit={(event) => {
           event.preventDefault();
           if (answered) onNext();
           else if (typed.trim() !== '') onAnswer(typed);
         }}
       >
-        <div className="flex flex-col gap-2 text-sm">
-          <label htmlFor="vocabulary-answer" className="font-semibold">
-            Em inglês
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex min-w-0 flex-1">
-              <input
-                id="vocabulary-answer"
-                ref={input}
-                value={answered ? (answer?.typed ?? typed) : typed}
-                onChange={(event) => setTyped(event.target.value)}
-                onKeyDown={(event) => {
-                  // The field takes no typing in voice mode, so Space means
-                  // "listen (again)" — or, mid-take, "stop listening".
-                  if (voice && !answered && event.key === ' ') {
-                    event.preventDefault();
-                    if (listening) speech.stop();
-                    else listen();
-                  }
-                }}
-                readOnly={answered || voice}
-                autoFocus
-                autoComplete="off"
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-                lang="en"
-                placeholder={listening ? '' : voice ? 'toque no microfone e fale' : 'digite e aperte Enter'}
-                className={`h-14 w-full rounded-sm border bg-bg px-4 font-mono text-lg text-fg outline-none placeholder:text-dim ${
-                  listening
-                    ? 'border-ok'
-                    : answer === null
-                      ? 'border-line focus:border-accent'
-                      : VERDICT_STYLE[answer.verdict].className
-                }`}
-              />
-              {listening && (
-                <span className="pointer-events-none absolute inset-0 flex items-center px-4 font-mono text-lg text-ok" aria-hidden="true">
-                  ouvindo
-                  {[0, 0.2, 0.4].map((delay) => (
-                    <span key={delay} className="animate-listening-dot" style={{ animationDelay: `${delay}s` }}>
-                      .
-                    </span>
-                  ))}
+        {below >= 2 && (
+          <div
+            className="absolute inset-x-0 top-0 bottom-4 origin-bottom translate-y-4 scale-x-90 rounded-xl border border-line-soft bg-sidebar"
+            aria-hidden="true"
+          />
+        )}
+        {below >= 1 && (
+          <div
+            className="absolute inset-x-0 top-0 bottom-4 origin-bottom translate-y-2 scale-x-95 rounded-xl border border-line bg-surface"
+            aria-hidden="true"
+          />
+        )}
+
+        <div className="relative perspective-[1400px]">
+          {/* Both faces share one grid cell, so the card is as tall as the taller one. */}
+          <div
+            className={`grid grid-cols-1 transition-transform duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] transform-3d motion-reduce:transition-none ${
+              answered ? 'rotate-y-180' : ''
+            }`}
+          >
+            <div
+              className={`col-start-1 row-start-1 flex min-h-80 flex-col gap-3 rounded-xl border border-line-strong bg-raised p-5 backface-hidden ${
+                answered ? 'pointer-events-none' : ''
+              }`}
+            >
+              <span className="self-start rounded-full border border-line-strong px-2.5 py-1 text-xs font-semibold text-muted">
+                {word.category}
+              </span>
+              <div className="flex flex-1 items-center justify-center py-4 text-center">
+                <span className="font-display text-4xl font-semibold break-words sm:text-5xl" lang="pt-BR">
+                  {word.portuguese}
                 </span>
-              )}
-            </div>
-            {voice && !answered && (
-              <button
-                type="button"
-                onClick={listening ? speech.stop : listen}
-                aria-label={listening ? 'Parar de ouvir' : 'Falar a resposta'}
-                aria-pressed={listening}
-                title={listening ? 'Parar de ouvir' : 'Falar a resposta (Espaço)'}
-                className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-sm border-2 hover:brightness-110 ${
-                  listening ? 'border-ok bg-ok/15 text-ok' : 'border-accent bg-raised text-accent'
+              </div>
+
+              <label htmlFor="vocabulary-answer" className="text-sm font-semibold">
+                Em inglês
+              </label>
+              <div
+                className={`relative flex h-14 items-center gap-1.5 rounded-md border bg-bg pr-1.5 pl-4 ${
+                  listening ? 'border-ok' : 'border-line-strong focus-within:border-accent'
                 }`}
               >
-                <Microphone size={listening ? 22 : 26} weight="bold" aria-hidden="true" />
-                {/* Green and moving: the mic is open. */}
+                <input
+                  id="vocabulary-answer"
+                  ref={input}
+                  value={answered ? (answer?.typed ?? typed) : typed}
+                  onChange={(event) => setTyped(event.target.value)}
+                  onKeyDown={(event) => {
+                    // The field takes no typing in voice mode, so Space means
+                    // "listen (again)" — or, mid-take, "stop listening".
+                    if (voice && !answered && event.key === ' ') {
+                      event.preventDefault();
+                      if (listening) speech.stop();
+                      else listen();
+                    }
+                  }}
+                  readOnly={answered || voice}
+                  autoFocus
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  lang="en"
+                  placeholder={listening ? '' : voice ? 'toque no microfone' : 'digite e aperte Enter'}
+                  className="h-full min-w-0 flex-1 bg-transparent font-mono text-base text-fg sm:text-lg outline-none placeholder:text-dim"
+                />
                 {listening && (
-                  <span className="flex h-2 items-center gap-0.5" aria-hidden="true">
-                    {[0, 0.15, 0.3, 0.45].map((delay) => (
-                      <span
-                        key={delay}
-                        className="h-full w-[3px] origin-center animate-listening rounded-full bg-ok"
-                        style={{ animationDelay: `${delay}s` }}
-                      />
+                  <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-mono text-base text-ok sm:text-lg" aria-hidden="true">
+                    ouvindo
+                    {[0, 0.2, 0.4].map((delay) => (
+                      <span key={delay} className="animate-listening-dot" style={{ animationDelay: `${delay}s` }}>
+                        .
+                      </span>
                     ))}
                   </span>
                 )}
-              </button>
-            )}
+                {voice && !answered && (
+                  <button
+                    type="button"
+                    onClick={listening ? speech.stop : listen}
+                    aria-label={listening ? 'Parar de ouvir' : 'Falar a resposta'}
+                    aria-pressed={listening}
+                    title={listening ? 'Parar de ouvir' : 'Falar a resposta (Espaço)'}
+                    className={`flex h-11 w-11 shrink-0 flex-col items-center justify-center gap-0.5 rounded-sm border-2 hover:brightness-110 ${
+                      listening ? 'border-ok bg-ok/15 text-ok' : 'border-accent bg-raised text-accent'
+                    }`}
+                  >
+                    <Microphone size={listening ? 18 : 20} weight="bold" aria-hidden="true" />
+                    {/* Green and moving: the mic is open. */}
+                    {listening && (
+                      <span className="flex h-1.5 items-center gap-0.5" aria-hidden="true">
+                        {[0, 0.15, 0.3, 0.45].map((delay) => (
+                          <span
+                            key={delay}
+                            className="h-full w-[3px] origin-center animate-listening rounded-full bg-ok"
+                            style={{ animationDelay: `${delay}s` }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  aria-label="Conferir"
+                  title="Conferir (Enter)"
+                  tabIndex={answered ? -1 : undefined}
+                  // Keeps the focus — and a phone's keyboard — on the field.
+                  onMouseDown={(event) => event.preventDefault()}
+                  disabled={!answered && (listening || typed.trim() === '')}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-accent text-bg hover:brightness-110 disabled:bg-line disabled:text-muted disabled:hover:brightness-100"
+                >
+                  <Check size={20} weight="bold" aria-hidden="true" />
+                </button>
+              </div>
+
+              {voice && !answered && (
+                <span className={`text-sm ${error !== null && !listening ? 'text-bad' : 'text-muted'}`} role="status">
+                  {listening
+                    ? 'Ouvindo… fale a palavra em inglês'
+                    : error !== null
+                      ? SPEECH_ERRORS[error]
+                      : typed === ''
+                        ? 'Toque no microfone (ou Espaço) e fale.'
+                        : 'Se estiver certo, aperte ✓. Se não, fale de novo.'}
+                </span>
+              )}
+            </div>
+
+            {/* The back stays empty until you answer, so the answer is never in the page early. */}
+            <button
+              type="submit"
+              tabIndex={answered ? undefined : -1}
+              aria-hidden={!answered}
+              className={`col-start-1 row-start-1 flex min-h-80 rotate-y-180 flex-col gap-4 rounded-xl border-2 bg-raised p-5 text-left backface-hidden ${
+                style?.border ?? 'border-line'
+              } ${answered ? '' : 'pointer-events-none'}`}
+            >
+              {answer !== null && <CardBack verdict={answer.verdict} word={word} typed={answer.typed} />}
+            </button>
           </div>
         </div>
-
-        {voice && !answered && (
-          <span className={`text-sm ${error !== null && !listening ? 'text-bad' : 'text-muted'}`} role="status">
-            {listening
-              ? 'Ouvindo… fale a palavra em inglês'
-              : error !== null
-                ? SPEECH_ERRORS[error]
-                : typed === ''
-                  ? 'Toque no microfone (ou Espaço) e fale. O que for entendido aparece no campo.'
-                  : 'Se estiver certo, aperte Enter. Se não, toque no microfone e fale de novo.'}
-          </span>
-        )}
-
-        {answer !== null && <Feedback verdict={answer.verdict} word={word} />}
-
-        <button type="submit" className={`${PRIMARY} self-start`} disabled={!answered && (listening || typed.trim() === '')}>
-          {answered ? 'Próxima' : 'Conferir'}
-          <ArrowRight size={18} weight="bold" aria-hidden="true" />
-        </button>
       </form>
+
+      {answer !== null && style !== null && (
+        <span className="sr-only" role="status">
+          {style.label}: {word.english}
+        </span>
+      )}
     </section>
   );
 }
 
-function Feedback({ verdict, word }: { verdict: Verdict; word: Word }) {
+function CardBack({ verdict, word, typed }: { verdict: Verdict; word: Word; typed: string }) {
   const style = VERDICT_STYLE[verdict];
-  const alternatives = word.alternatives.length > 0 ? ` (também: ${word.alternatives.join(', ')})` : '';
 
   return (
-    <div role="status" className={`flex items-start gap-3 rounded-md border px-4 py-3 ${style.className}`}>
-      {verdict === 'right' ? (
-        <Check size={20} weight="bold" aria-hidden="true" className="mt-0.5 shrink-0" />
-      ) : (
-        <X size={20} weight="bold" aria-hidden="true" className="mt-0.5 shrink-0" />
-      )}
-      <div className="flex flex-col gap-1 text-sm">
-        <span className="font-semibold">
-          {style.label}
-          {verdict === 'almost' && ' — confira a grafia'}
+    <>
+      <span className={`flex items-center gap-2 text-sm font-semibold ${style.text}`}>
+        {verdict === 'right' ? (
+          <Check size={20} weight="bold" aria-hidden="true" />
+        ) : (
+          <X size={20} weight="bold" aria-hidden="true" />
+        )}
+        {style.label}
+        {verdict === 'almost' && ' — confira a grafia'}
+      </span>
+      <span className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+        <span className="text-muted" lang="pt-BR">
+          {word.portuguese}
         </span>
-        <span className="text-fg">
-          <span className="font-mono text-base">{word.english}</span>
-          <span className="text-muted">{alternatives}</span>
+        <span className="font-mono text-3xl font-semibold break-all sm:text-4xl" lang="en">
+          {word.english}
         </span>
-      </div>
-    </div>
+        {word.alternatives.length > 0 && (
+          <span className="text-sm text-muted">também: {word.alternatives.join(', ')}</span>
+        )}
+        <span className="mt-3 text-sm text-muted">
+          você:{' '}
+          <span className={`font-mono ${style.text} ${verdict === 'right' ? '' : 'line-through'}`} lang="en">
+            {typed}
+          </span>
+        </span>
+      </span>
+      <span className="flex items-center justify-center gap-2 border-t border-line pt-3.5 text-sm font-semibold text-accent">
+        Toque no cartão<span className="hidden sm:inline"> ou aperte Enter</span> para a próxima
+        <ArrowRight size={18} weight="bold" aria-hidden="true" />
+      </span>
+    </>
   );
 }
 
