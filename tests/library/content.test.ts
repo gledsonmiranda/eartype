@@ -5,7 +5,7 @@
 
 import { readdir } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { segment } from '@/lib/captions/segmenter';
+import { SEGMENT_SIZES, segmentAt } from '@/lib/captions/segmenter';
 import { DEFAULT_LIBRARY_DIR, listLibrary, loadLibraryVideo } from '@/lib/library/catalog';
 
 const folders = (await readdir(DEFAULT_LIBRARY_DIR, { withFileTypes: true }))
@@ -21,6 +21,6 @@ describe('content/library', () => {
   it.each(folders)('%s loads and segments', async (videoId) => {
     const video = await loadLibraryVideo(videoId);
     expect(video).not.toBeNull();
-    expect(segment(video!.cues).length).toBeGreaterThan(0);
+    for (const size of SEGMENT_SIZES) expect(segmentAt(video!.cues, size).length).toBeGreaterThan(0);
   });
 });

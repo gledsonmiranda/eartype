@@ -19,6 +19,7 @@ export function HomeScreen({ library }: { library: ReactNode }) {
     <PracticeScreen
       videoId={session.videoId}
       segments={session.segments}
+      cues={session.cues}
       captionKind={session.captionKind}
       startIndex={session.startIndex}
       onLeave={() => setSession(null)}

@@ -2,16 +2,18 @@
 
 import { useRouter } from 'next/navigation';
 import { PracticeScreen } from '@/app/components/PracticeScreen';
-import type { CaptionKind, Segment } from '@/types';
+import type { CaptionKind, Cue, Segment } from '@/types';
 
 export function LibraryPractice({
   videoId,
   segments,
+  cues,
   captionKind,
   title,
 }: {
   videoId: string;
   segments: Segment[];
+  cues: Cue[];
   captionKind: CaptionKind;
   title?: string;
 }) {
@@ -21,6 +23,7 @@ export function LibraryPractice({
     <PracticeScreen
       videoId={videoId}
       segments={segments}
+      cues={cues}
       captionKind={captionKind}
       title={title}
       onLeave={() => router.push('/videos')}

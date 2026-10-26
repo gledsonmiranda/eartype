@@ -14,7 +14,8 @@
  */
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { Check, Copy, Translate } from '@phosphor-icons/react';
+import { Check, Copy, Minus, Plus, Translate } from '@phosphor-icons/react';
+import { SEGMENT_SIZES, type SegmentSize } from '@/lib/captions/segmenter';
 import { isRevealed, type SegmentOutcome } from '@/lib/practice/session';
 import type { Segment } from '@/types';
 import { TranslationTooltip, useLineTranslation } from './LineTranslation';
@@ -26,7 +27,11 @@ export type TranscriptPanelProps = {
   showAll: boolean;
   onToggleShowAll: () => void;
   onSelect: (index: number) => void;
+  size: SegmentSize;
+  onSizeChange: (size: SegmentSize) => void;
 };
+
+const SIZE_LABELS: Record<SegmentSize, string> = { short: 'Curta', medium: 'Média', long: 'Longa' };
 
 const MARKERS: Record<SegmentOutcome, { label: ReactNode; className: string }> = {
   pending: { label: '', className: 'text-dim' },
@@ -47,6 +52,8 @@ export function TranscriptPanel({
   showAll,
   onToggleShowAll,
   onSelect,
+  size,
+  onSizeChange,
 }: TranscriptPanelProps) {
   const current = useRef<HTMLLIElement>(null);
   const tooltipId = useId();
@@ -86,14 +93,17 @@ export function TranscriptPanel({
     <aside className="flex max-h-96 min-h-0 flex-col border-t border-line-soft bg-sidebar lg:max-h-none lg:border-t-0 lg:border-l">
       <header className="flex h-14 items-center justify-between gap-2 border-b border-line-soft px-5">
         <h2 className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">Legenda</h2>
-        <button
-          type="button"
-          onClick={onToggleShowAll}
-          aria-pressed={showAll}
-          className="h-9 rounded-sm border border-line px-3.5 text-[13px] text-fg hover:border-line-strong"
-        >
-          {showAll ? 'Esconder' : 'Mostrar tudo'}
-        </button>
+        <div className="flex items-center gap-3">
+          <SizeStepper size={size} onChange={onSizeChange} />
+          <button
+            type="button"
+            onClick={onToggleShowAll}
+            aria-pressed={showAll}
+            className="h-9 rounded-sm border border-line px-3.5 text-[13px] whitespace-nowrap text-fg hover:border-line-strong"
+          >
+            {showAll ? 'Esconder' : 'Mostrar tudo'}
+          </button>
+        </div>
       </header>
 
       <ol className="min-h-0 flex-1 overflow-y-auto py-2" onScroll={translatedIndex === null ? undefined : hide}>
@@ -162,6 +172,66 @@ export function TranscriptPanel({
       </ol>
       <TranslationTooltip id={tooltipId} state={translation.state} />
     </aside>
+  );
+}
+
+/**
+ * − for shorter pieces, + for longer ones. At either end the button stays
+ * where it is, dimmed and inert, so the label never shifts under the cursor.
+ */
+function SizeStepper({ size, onChange }: { size: SegmentSize; onChange: (size: SegmentSize) => void }) {
+  const at = SEGMENT_SIZES.indexOf(size);
+  const step = (by: number) => {
+    const next = SEGMENT_SIZES[at + by];
+    if (next !== undefined) onChange(next);
+  };
+
+  return (
+    <div role="group" aria-label="tamanho do trecho" className="flex items-center">
+      <StepButton label="trechos menores" title="Trechos menores" atEnd={at === 0} onClick={() => step(-1)}>
+        <Minus size={13} aria-hidden="true" />
+      </StepButton>
+      <span aria-live="polite" className="min-w-10 text-center text-xs text-muted">
+        {SIZE_LABELS[size]}
+      </span>
+      <StepButton
+        label="trechos maiores"
+        title="Trechos maiores"
+        atEnd={at === SEGMENT_SIZES.length - 1}
+        onClick={() => step(1)}
+      >
+        <Plus size={13} aria-hidden="true" />
+      </StepButton>
+    </div>
+  );
+}
+
+function StepButton({
+  label,
+  title,
+  atEnd,
+  onClick,
+  children,
+}: {
+  label: string;
+  title: string;
+  atEnd: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-disabled={atEnd}
+      title={title}
+      className={`flex size-6 items-center justify-center rounded-sm text-dim ${
+        atEnd ? 'cursor-default opacity-35' : 'hover:bg-raised hover:text-fg'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

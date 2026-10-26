@@ -8,10 +8,13 @@ import {
   listProgress,
   loadProgress,
   loadSettings,
+  loadSize,
   parseProgress,
+  remapSession,
   resumeIndex,
   saveProgress,
   saveSettings,
+  saveSize,
   toStored,
   type StoredProgress,
 } from '@/lib/practice/progress';
@@ -121,6 +124,14 @@ describe('storage', () => {
     Reflect.deleteProperty(globalThis, 'localStorage');
   });
 
+  it('keeps the segment size per video, long being the same as nothing saved', () => {
+    expect(loadSize(VIDEO)).toBeNull();
+    saveSize(VIDEO, 'short');
+    expect(loadSize(VIDEO)).toBe('short');
+    saveSize(VIDEO, 'long');
+    expect(loadSize(VIDEO)).toBeNull();
+  });
+
   it('saves, loads, lists and clears a video', () => {
     saveProgress(VIDEO, stored({ outcomes: { '0': 'correct' } }));
 
@@ -192,5 +203,57 @@ describe('storage', () => {
       importAll(JSON.stringify({ app: 'eartype', v: 1, progress: { [VIDEO]: { v: 9 } } })),
     ).toMatchObject({ ok: false });
     expect(loadProgress(VIDEO)).toBeNull();
+  });
+});
+
+describe('remapSession', () => {
+  /** Segments by `[startSec, endSec]`. */
+  const cut = (...ranges: [number, number][]): Segment[] =>
+    ranges.map(([start, end], index) => ({
+      index,
+      startMs: start * 1000,
+      endMs: end * 1000,
+      referenceText: `segment ${index}`,
+      sourceCueIds: [],
+    }));
+
+  const long = cut([0, 8], [8, 16]);
+  const short = cut([0, 4], [4, 8], [8, 12], [12, 16]);
+
+  it('marks the pieces of an answered segment as answered', () => {
+    const session = recordOutcome(startSession(2), 'correct');
+    expect(remapSession(session, long, short).outcomes).toEqual(['correct', 'correct', 'pending', 'pending']);
+  });
+
+  it('leaves a longer segment pending until every part of it is answered', () => {
+    let session = recordOutcome(startSession(4), 'correct');
+    session = recordOutcome(goTo(session, 2), 'correct');
+    session = recordOutcome(goTo(session, 3), 'accepted');
+    expect(remapSession(session, short, long).outcomes).toEqual(['pending', 'accepted']);
+  });
+
+  it('ignores a neighbour it only grazes', () => {
+    const shifted = cut([0, 8.2], [8.2, 16]);
+    const session = recordOutcome(startSession(2), 'skipped');
+    expect(remapSession(session, long, shifted).outcomes).toEqual(['skipped', 'pending']);
+  });
+
+  it('stays on the segment holding the start of the current one', () => {
+    const session = goTo(startSession(4), 3);
+    const back = remapSession(session, short, long);
+    expect(back.index).toBe(1);
+    expect(back.total).toBe(2);
+    expect(back.attempts).toBe(0);
+  });
+});
+
+describe('segment size', () => {
+  it('rides along in the progress record, so a backup lands on the right cut', () => {
+    const session = recordOutcome(startSession(3), 'correct');
+    const saved = toStored(session, segmentsAt(0, 4000, 8000), 1, 'medium');
+    expect(saved.size).toBe('medium');
+    expect(parseProgress(saved)?.size).toBe('medium');
+    expect(toStored(session, segmentsAt(0, 4000, 8000), 1)).not.toHaveProperty('size');
+    expect(parseProgress({ ...saved, size: 'huge' })).not.toHaveProperty('size');
   });
 });
