@@ -70,6 +70,7 @@ export async function addToLibrary(input: {
 
   revalidatePath('/');
   revalidatePath('/videos');
+  revalidatePath(`/library/${input.videoId}`);
   return { ok: true };
 }
 
@@ -85,6 +86,7 @@ export async function removeFromLibrary(videoId: string): Promise<LibraryActionR
 
   revalidatePath('/');
   revalidatePath('/videos');
+  revalidatePath(`/library/${videoId}`);
   return { ok: true };
 }
 
