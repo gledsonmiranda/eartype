@@ -57,7 +57,8 @@ export function VocabularyLibrary() {
 
   return (
     <section className="flex flex-col gap-6" aria-labelledby="words-title">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* Stacked on a phone, so the count arriving after mount can't wrap the button down (layout shift). */}
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-1">
           <h1 id="words-title" className="font-display text-2xl font-semibold">
             Palavras

@@ -46,7 +46,6 @@ export function CaptionDrop({ fileName, summary, onLoad, onError }: CaptionDropP
     <div
       role="button"
       tabIndex={0}
-      aria-label="escolher arquivo de legenda .srt ou .vtt"
       onClick={() => picker.current?.click()}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {

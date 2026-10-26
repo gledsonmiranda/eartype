@@ -12,7 +12,7 @@
   --color-line-strong: #3a4352;
   --color-fg: #e8ebf1;
   --color-muted: #9aa3b2;
-  --color-dim: #7c8596;
+  --color-dim: #838c9c; /* ≥ 4.5:1 even on raised */
   --color-accent: #a5b4ff;
   --color-ok: #5fd3a8;
   --color-warn: #f2b84b;

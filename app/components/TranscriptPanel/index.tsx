@@ -127,7 +127,7 @@ export function TranscriptPanel({
                 </span>
                 <span
                   className={`font-mono leading-snug transition-[filter,opacity] duration-300 ${
-                    revealed ? 'text-fg' : 'text-muted opacity-70 blur-[5px] select-none'
+                    revealed ? 'text-fg' : 'text-muted blur-[5px] select-none'
                   }`}
                   aria-hidden={!revealed}
                 >

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
+import { GoogleAnalytics } from '@/app/components/GoogleAnalytics';
 import './globals.css';
 
 const instrument = Instrument_Sans({ subsets: ['latin'], variable: '--font-instrument' });
@@ -17,7 +18,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       lang="pt-BR"
       className={`${instrument.variable} ${bricolage.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <GoogleAnalytics />
+      </body>
     </html>
   );
 }

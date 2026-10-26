@@ -7,8 +7,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { segment } from '@/lib/captions/segmenter';
-import { loadLibraryVideo } from '@/lib/library/catalog';
+import { listLibrary, loadLibraryVideo } from '@/lib/library/catalog';
 import { LibraryPractice } from './LibraryPractice';
+
+/**
+ * Prerendered at build: the HTML is ready, and the metadata lands in `<head>`
+ * instead of streaming into `<body>`. Videos added later render on first visit;
+ * the library actions revalidate their path.
+ */
+export async function generateStaticParams() {
+  return (await listLibrary()).map(({ videoId }) => ({ videoId }));
+}
 
 export async function generateMetadata({
   params,
