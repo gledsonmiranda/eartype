@@ -16,6 +16,7 @@ import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
 import { VideoPlayer } from '@/app/components/VideoPlayer';
 import { VideoSettings } from '@/app/components/VideoSettings';
+import { segmentAt, type SegmentSize } from '@/lib/captions/segmenter';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
 import { revealNextWord, separateJoinedParts } from '@/lib/practice/slots';
 import { playSegment, type Playback } from '@/lib/player/segment-playback';
@@ -30,8 +31,11 @@ import {
   fromStored,
   loadProgress,
   loadSettings,
+  loadSize,
+  remapSession,
   saveProgress,
   saveSettings,
+  saveSize,
   toStored,
 } from '@/lib/practice/progress';
 import {
@@ -57,7 +61,10 @@ const AUTO_ADVANCE_MS = 1200;
 
 export type PracticeScreenProps = {
   videoId: string;
+  /** The captions, cut at the default size — what renders before storage is read. */
   segments: Segment[];
+  /** What `segments` was cut from: the shorter sizes cut it again. */
+  cues: Cue[];
   captionKind: CaptionKind;
   startIndex?: number;
   onLeave: () => void;
@@ -72,14 +79,17 @@ export type PracticeScreenProps = {
 
 export function PracticeScreen({
   videoId,
-  segments,
+  segments: longSegments,
+  cues,
   captionKind,
   startIndex = 0,
   onLeave,
   libraryCues,
   title,
 }: PracticeScreenProps) {
-  const [session, setSession] = useState<Session>(() => startSession(segments.length, startIndex));
+  const [session, setSession] = useState<Session>(() => startSession(longSegments.length, startIndex));
+  // The − / + in the transcript panel. `long` is the cut the page arrived with.
+  const [size, setSize] = useState<SegmentSize>('long');
   const [typed, setTyped] = useState('');
   const [result, setResult] = useState<DiffResult | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -105,6 +115,10 @@ export function PracticeScreen({
   const playback = useRef<Playback | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
+  const segments = useMemo(
+    () => (size === 'long' ? longSegments : segmentAt(cues, size)),
+    [size, longSegments, cues],
+  );
   const segment = segments[session.index];
   const canBeStrict = captionKind === 'manual';
   const mode: CorrectionMode = strict && canBeStrict ? 'strict' : 'lenient';
@@ -131,20 +145,29 @@ export function PracticeScreen({
   useEffect(() => {
     const settings = loadSettings();
     const stored = loadProgress(videoId);
+    // The record's own size wins: its keys only line up with the cut they came from.
+    const savedSize = stored !== null ? (stored.size ?? 'long') : (loadSize(videoId) ?? 'long');
+    const cut = savedSize === 'long' ? longSegments : segmentAt(cues, savedSize);
+    // `startIndex` counts in the default cut; carry it over by time.
+    const startMs = longSegments[startIndex]?.startMs ?? 0;
+    const start = startIndex > 0 ? Math.max(0, cut.findIndex((current) => current.endMs > startMs)) : 0;
     /* eslint-disable react-hooks/set-state-in-effect -- storage only exists after mount */
     setSlots(settings.slots);
     setStrict(settings.strict);
+    setSize(savedSize);
     if (stored !== null && answeredCount(stored) > 0) {
-      const saved = fromStored(stored, segments);
-      if (startIndex > 0) setSession(goToSegment(saved, startIndex));
+      const saved = fromStored(stored, cut);
+      if (startIndex > 0) setSession(goToSegment(saved, start));
       else {
         setSession(saved);
         setResumeOffer(!isFinished(saved));
       }
+    } else if (savedSize !== 'long') {
+      setSession(startSession(cut.length, start));
     }
     setRestored(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [videoId, segments, startIndex]);
+  }, [videoId, longSegments, cues, startIndex]);
 
   useEffect(() => {
     if (restored) saveSettings({ v: 1, slots, strict });
@@ -154,8 +177,8 @@ export function PracticeScreen({
   // should not leave a record behind.
   useEffect(() => {
     if (!restored || session.outcomes.every((outcome) => outcome === 'pending')) return;
-    saveProgress(videoId, toStored(session, segments));
-  }, [restored, session, segments, videoId]);
+    saveProgress(videoId, toStored(session, segments, Date.now(), size));
+  }, [restored, session, segments, size, videoId]);
 
   // Autoplay each new segment, and stop polling when the screen goes away.
   useEffect(() => {
@@ -188,6 +211,14 @@ export function PracticeScreen({
     setShowAll(false);
     moveWith(() => startSession(segments.length));
     setRestartKey((current) => current + 1);
+  };
+
+  /** Re-cuts the transcript, keeping what was answered by time (RF-03). */
+  const changeSize = (next: SegmentSize) => {
+    const cut = next === 'long' ? longSegments : segmentAt(cues, next);
+    moveWith((current) => remapSession(current, segments, cut));
+    setSize(next);
+    saveSize(videoId, next);
   };
 
   /** For a video already done before progress was kept: every open segment counts as typed. */
@@ -558,6 +589,8 @@ export function PracticeScreen({
         <TranscriptPanel
           segments={segments}
           outcomes={session.outcomes}
+          size={size}
+          onSizeChange={changeSize}
           currentIndex={session.index}
           showAll={showAll}
           onToggleShowAll={() => setShowAll((current) => !current)}

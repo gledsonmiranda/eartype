@@ -9,6 +9,7 @@
  */
 
 import type { Cue, Segment } from '@/types';
+import { SENTENCE_END, splitCues, WEAK_PUNCTUATION } from './split-cues';
 
 export type SegmentOptions = {
   /** Below this a segment is too short to practise. */
@@ -175,9 +176,6 @@ export function cleanCues(cues: Cue[], options: Required<SegmentOptions>): Cue[]
 
 // ----------------------------------------------------------- segmentation
 
-const SENTENCE_END = /[.!?]["'”’)\]]*$/;
-const WEAK_PUNCTUATION = /[,;:—–-]["'”’)\]]*$/;
-
 /** How far past `maxWords` a segment may go to avoid leaving a scrap behind. */
 const WORD_TOLERANCE = 5;
 
@@ -195,7 +193,11 @@ function close(pending: Pending, index: number): Segment {
 
 export function segment(cues: Cue[], options: SegmentOptions = {}): Segment[] {
   const opts = { ...DEFAULTS, ...options };
-  const cleaned = cleanCues(cues, opts);
+  return segmentCleaned(cleanCues(cues, opts), opts);
+}
+
+/** `segment` minus the cleanup — for cues that already went through it. */
+function segmentCleaned(cleaned: Cue[], opts: Required<SegmentOptions>): Segment[] {
   if (cleaned.length === 0) return [];
 
   const segments: Segment[] = [];
@@ -325,4 +327,29 @@ function mergeScraps(segments: Segment[], options: Required<SegmentOptions>): Se
 
 function reindex(segments: Segment[]): Segment[] {
   return segments.map((segment, index) => ({ ...segment, index }));
+}
+
+// ------------------------------------------------------------------ sizes
+
+/**
+ * How long the pieces are — the − / + in the transcript panel. `long` is the
+ * segmenter as it always was; the shorter sizes first cut the cues themselves
+ * (`splitCues`), because a hand-typed caption can pack 20 words and three
+ * sentences into one cue, and grouping alone never makes that smaller.
+ */
+export type SegmentSize = 'short' | 'medium' | 'long';
+
+export const SEGMENT_SIZES: readonly SegmentSize[] = ['short', 'medium', 'long'];
+
+const SIZE_OPTIONS: Record<Exclude<SegmentSize, 'long'>, SegmentOptions> = {
+  medium: { maxWords: 10, maxMs: 5000, targetMinMs: 2000 },
+  short: { maxWords: 6, maxMs: 3500, targetMinMs: 1500, minMs: 1000 },
+};
+
+export function segmentAt(cues: Cue[], size: SegmentSize): Segment[] {
+  if (size === 'long') return segment(cues);
+
+  const opts = { ...DEFAULTS, ...SIZE_OPTIONS[size] };
+  const pieces = splitCues(cleanCues(cues, opts), opts.maxWords, opts.silenceGapMs);
+  return segmentCleaned(pieces, opts);
 }

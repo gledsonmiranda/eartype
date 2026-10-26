@@ -39,6 +39,7 @@ export default async function LibraryVideoPage({ params }: PageProps<'/library/[
     <LibraryPractice
       videoId={videoId}
       segments={segments}
+      cues={video.cues}
       captionKind={video.entry.kind}
       title={video.entry.title}
     />

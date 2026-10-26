@@ -11,6 +11,7 @@
  * server render all turn into "nothing saved", never a crash.
  */
 
+import { SEGMENT_SIZES, type SegmentSize } from '@/lib/captions/segmenter';
 import { firstPending, startSession, type SegmentOutcome, type Session } from '@/lib/practice/session';
 import { read, remove, storage, write } from '@/lib/storage/local';
 import { loadOverlay, mergeOverlays, parseOverlay, saveOverlay } from '@/lib/vocabulary/words';
@@ -27,6 +28,12 @@ export type StoredProgress = {
   /** `startMs` of the segment you were on. */
   currentStartMs: number;
   updatedAt: number;
+  /**
+   * The cut the `startMs` keys belong to — absent for `long`, the cut every
+   * record had before sizes existed. Kept here, not only in the size key, so
+   * a backup restored elsewhere lays its outcomes over the right segments.
+   */
+  size?: Exclude<SegmentSize, 'long'>;
 };
 
 export type StoredSettings = {
@@ -39,6 +46,7 @@ export const DEFAULT_SETTINGS: StoredSettings = { v: 1, slots: true, strict: fal
 
 const PROGRESS_PREFIX = 'eartype:progress:';
 const SETTINGS_KEY = 'eartype:settings';
+const SIZE_PREFIX = 'eartype:size:';
 
 /** Fired on `window` whenever a progress record changes outside the screen that owns it. */
 export const PROGRESS_CHANGED = 'eartype:progress-changed';
@@ -52,7 +60,12 @@ export function answeredCount(stored: StoredProgress): number {
   return Object.keys(stored.outcomes).length;
 }
 
-export function toStored(session: Session, segments: readonly Segment[], now = Date.now()): StoredProgress {
+export function toStored(
+  session: Session,
+  segments: readonly Segment[],
+  now = Date.now(),
+  size: SegmentSize = 'long',
+): StoredProgress {
   const outcomes: Record<string, Answered> = {};
   session.outcomes.forEach((outcome, index) => {
     const segment = segments[index];
@@ -65,6 +78,7 @@ export function toStored(session: Session, segments: readonly Segment[], now = D
     outcomes,
     currentStartMs: segments[session.index]?.startMs ?? 0,
     updatedAt: now,
+    ...(size === 'long' ? {} : { size }),
   };
 }
 
@@ -75,6 +89,45 @@ export function fromStored(stored: StoredProgress, segments: readonly Segment[])
     ...session,
     outcomes: segments.map((segment) => stored.outcomes[String(segment.startMs)] ?? 'pending'),
   };
+}
+
+/** Below this, two segments only touch — a word's worth of estimated timing. */
+const MIN_OVERLAP_MS = 300;
+
+/** Worst first: a piece is only as done as the least done part of it. */
+const RANK: Record<Answered, number> = { skipped: 0, accepted: 1, correct: 2 };
+
+/**
+ * The run laid over another cut of the same captions — when the segment size
+ * changes. A new segment counts as answered when every old segment it covers
+ * was, with the weakest of their outcomes; anything else goes back to pending.
+ * You stay on the segment that holds the start of the one you were on.
+ */
+export function remapSession(
+  session: Session,
+  from: readonly Segment[],
+  to: readonly Segment[],
+): Session {
+  const outcomes = to.map((target): SegmentOutcome => {
+    const covered = from
+      .map((source, index) => ({ source, outcome: session.outcomes[index] ?? 'pending' }))
+      .filter(
+        ({ source }) =>
+          Math.min(source.endMs, target.endMs) - Math.max(source.startMs, target.startMs) >= MIN_OVERLAP_MS,
+      );
+    if (covered.length === 0) return 'pending';
+
+    let worst: Answered = 'correct';
+    for (const { outcome } of covered) {
+      if (outcome === 'pending') return 'pending';
+      if (RANK[outcome] < RANK[worst]) worst = outcome;
+    }
+    return worst;
+  });
+
+  const currentStartMs = from[session.index]?.startMs ?? 0;
+  const at = to.findIndex((segment) => segment.endMs > currentStartMs);
+  return { ...startSession(to.length, at === -1 ? to.length - 1 : at), outcomes };
 }
 
 /**
@@ -104,13 +157,19 @@ export function parseProgress(value: unknown): StoredProgress | null {
     outcomes[startMs] = outcome as Answered;
   }
 
+  const size = parseSize(record.size);
   return {
     v: 1,
     total: record.total,
     outcomes,
     currentStartMs: record.currentStartMs,
     updatedAt: record.updatedAt,
+    ...(size === null || size === 'long' ? {} : { size }),
   };
+}
+
+export function parseSize(value: unknown): SegmentSize | null {
+  return SEGMENT_SIZES.find((size) => size === value) ?? null;
 }
 
 export function parseSettings(value: unknown): StoredSettings | null {
@@ -155,6 +214,16 @@ export function listProgress(): Record<string, StoredProgress> {
     // Partial list is better than none.
   }
   return all;
+}
+
+/** The size picked for a video, even before anything in it is answered. */
+export function loadSize(videoId: string): SegmentSize | null {
+  return parseSize(read(SIZE_PREFIX + videoId));
+}
+
+export function saveSize(videoId: string, size: SegmentSize): void {
+  if (size === 'long') remove(SIZE_PREFIX + videoId);
+  else write(SIZE_PREFIX + videoId, size);
 }
 
 export function loadSettings(): StoredSettings {
