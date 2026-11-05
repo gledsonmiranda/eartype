@@ -5,7 +5,7 @@
  */
 
 import type { Verdict } from '@/lib/vocabulary/check';
-import type { Word } from '@/lib/vocabulary/words';
+import { isPastTense, type Word } from '@/lib/vocabulary/words';
 
 export const ALL_CATEGORIES = 'all';
 
@@ -32,6 +32,12 @@ export function shuffle<T>(items: readonly T[], random: () => number = Math.rand
 
 export function wordsIn(words: readonly Word[], category: string): Word[] {
   return category === ALL_CATEGORIES ? [...words] : words.filter((word) => word.category === category);
+}
+
+/** A deck to practice. "All" stays Portuguese → English: past-tense verbs ask a different question. */
+export function deckOf(words: readonly Word[], category: string): Word[] {
+  const chosen = wordsIn(words, category);
+  return category === ALL_CATEGORIES ? chosen.filter((word) => !isPastTense(word)) : chosen;
 }
 
 export function startVocabSession(words: readonly Word[], random?: () => number): VocabSession {

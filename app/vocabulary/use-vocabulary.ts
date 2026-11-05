@@ -8,10 +8,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import builtInWords from '@/content/vocabulary/words.json';
+import pastTenseWords from '@/content/vocabulary/past-tense.json';
 import { PROGRESS_CHANGED } from '@/lib/practice/progress';
 import { EMPTY_OVERLAY, loadOverlay, mergeWords, saveOverlay, type BuiltInWord, type Overlay } from '@/lib/vocabulary/words';
 
-export const BUILT_IN: readonly BuiltInWord[] = builtInWords;
+export const BUILT_IN: readonly BuiltInWord[] = [...builtInWords, ...pastTenseWords];
 
 export function useVocabulary() {
   const [overlay, setOverlay] = useState<Overlay>(EMPTY_OVERLAY);
