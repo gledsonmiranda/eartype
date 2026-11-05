@@ -41,7 +41,12 @@ export function deckOf(words: readonly Word[], category: string): Word[] {
 }
 
 export function startVocabSession(words: readonly Word[], random?: () => number): VocabSession {
-  return { queue: shuffle(words, random), index: 0, answers: [], stopped: false };
+  return dealVocabSession(shuffle(words, random));
+}
+
+/** A run in exactly this order. */
+export function dealVocabSession(queue: Word[]): VocabSession {
+  return { queue, index: 0, answers: [], stopped: false };
 }
 
 export function currentWord(session: VocabSession): Word | null {
