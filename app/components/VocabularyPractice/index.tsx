@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Vocabulary practice: pick a category, then a deck of cards, a Portuguese
- * word on each front — type the English, Enter to check and the card flips
- * to the answer, Enter (or a tap on it) for the next one. Everything sits on
- * the card, so on a phone it all fits above the keyboard. In voice
+ * Vocabulary practice: the home suggests today's session (or pick a subject),
+ * then a deck of cards, a Portuguese word on each front — type the English,
+ * Enter to check and the card flips to the answer, Enter (or a tap on it) for
+ * the next one. Everything sits on the card, so on a phone it all fits above
+ * the keyboard. In voice
  * mode the field is the microphone's alone: what it heard lands there, you
  * speak again if it misheard, and you are the one who confirms. Every answer
  * is saved to the word's stats as you go, so stopping loses nothing.
@@ -14,16 +15,32 @@
  * `red` and of `know` as `new`, which would mark right answers wrong.
  */
 
-import { useCallback, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, ClockCounterClockwise, Keyboard, Microphone, X } from '@phosphor-icons/react';
+import { ArrowRight, Check, Keyboard, Microphone, X } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { checkAnswer, type Verdict } from '@/lib/vocabulary/check';
+import {
+  dailyMix,
+  dailyQueue,
+  DEFAULT_SESSION_SIZE,
+  FIRST_SESSION_SIZE,
+  hasPracticed,
+  loadSessionSize,
+  mixSize,
+  progressOf,
+  saveSessionSize,
+  SESSION_SIZES,
+  topicDeck,
+  type SessionSize,
+  type WordProgress,
+} from '@/lib/vocabulary/daily';
 import { DEFAULT_MODE, loadMode, saveMode, type AnswerMode } from '@/lib/vocabulary/mode';
 import {
   ALL_CATEGORIES,
   answerWord,
   currentWord,
+  dealVocabSession,
   deckOf,
   isAnswered,
   isFinished,
@@ -36,6 +53,7 @@ import {
 } from '@/lib/vocabulary/session';
 import {
   categoriesOf,
+  isoDate,
   isPastTense,
   PAST_TENSE_CATEGORY,
   promptOf,
@@ -71,8 +89,13 @@ const SPEECH_ERRORS: Record<SpeechError, string> = {
 
 export function VocabularyPractice() {
   const { words, ready, update } = useVocabulary();
-  const [category, setCategory] = useState(ALL_CATEGORIES);
+  // What's being practiced, so "keep going" can deal more of the same. All means today's mix.
+  const [deck, setDeck] = useState<{ category: string; size: number }>({ category: ALL_CATEGORIES, size: DEFAULT_SESSION_SIZE });
+  const category = deck.category;
   const [session, setSession] = useState<VocabSession | null>(null);
+  const savedSize = useSyncExternalStore(subscribeStorage, loadSessionSize, () => DEFAULT_SESSION_SIZE);
+  const [pickedSize, setPickedSize] = useState<SessionSize | null>(null);
+  const size = pickedSize ?? savedSize;
   // The saved choice; the server renders the default. A pick made here wins
   // even when storage is blocked and the save goes nowhere.
   const saved = useSyncExternalStore(subscribeStorage, loadMode, () => DEFAULT_MODE);
@@ -110,17 +133,33 @@ export function VocabularyPractice() {
 
   const start = (chosen: Word[]) => setSession(startVocabSession(chosen));
 
+  /** Today's mix keeps its priority order; a subject is just shuffled. */
+  const deal = (chosen: string, count: number): VocabSession =>
+    chosen === ALL_CATEGORIES
+      ? dealVocabSession(dailyQueue(dailyMix(deckOf(words, ALL_CATEGORIES), count)))
+      : startVocabSession(topicDeck(deckOf(words, chosen), count));
+
+  const backHome = () => {
+    setSession(null);
+    leaveDeck();
+  };
+
   if (session === null) {
     return (
-      <Setup
+      <Home
         words={words}
         ready={ready}
         mode={effectiveMode}
         toggle={toggle(false)}
-        onStart={(chosen) => {
-          setCategory(chosen);
+        size={size}
+        onSize={(next) => {
+          setPickedSize(next);
+          saveSessionSize(next);
+        }}
+        onStart={(chosen, count) => {
+          setDeck({ category: chosen, size: count });
           enterDeck();
-          start(deckOf(words, chosen));
+          setSession(deal(chosen, count));
         }}
       />
     );
@@ -131,12 +170,14 @@ export function VocabularyPractice() {
     return (
       <Summary
         session={session}
-        onAgain={() => start(deckOf(words, category))}
-        onMissed={() => start(summary.missed.map((answer) => answer.word))}
-        onSetup={() => {
-          setSession(null);
-          leaveDeck();
+        onAgain={() => {
+          const next = deal(category, deck.size);
+          // Today's mix can run out; home says so instead of an empty summary.
+          if (next.queue.length === 0) backHome();
+          else setSession(next);
         }}
+        onMissed={() => start(summary.missed.map((answer) => answer.word))}
+        onSetup={backHome}
       />
     );
   }
@@ -206,16 +247,16 @@ function ModeToggle({
               type="button"
               role="radio"
               aria-checked={active}
-              aria-label={compact ? label : undefined}
+              aria-label={label}
               title={compact ? (disabled ? (voiceNote ?? label) : label) : undefined}
               disabled={disabled}
               onClick={() => onMode(value)}
-              className={`flex items-center gap-2 rounded-sm text-sm font-medium ${compact ? 'h-9 w-9 justify-center' : 'px-4 py-1.5'} ${
+              className={`flex items-center gap-2 rounded-sm text-sm font-medium ${compact ? 'h-9 w-9 justify-center' : 'h-11 w-11 justify-center sm:w-auto sm:px-4'} ${
                 active ? 'bg-raised text-accent' : 'text-muted hover:text-accent'
               } disabled:cursor-not-allowed disabled:text-dim disabled:hover:text-dim`}
             >
               <Icon size={compact ? 18 : 16} weight="bold" aria-hidden="true" />
-              {!compact && label}
+              {!compact && <span className="hidden sm:inline">{label}</span>}
             </button>
           );
         })}
@@ -227,97 +268,241 @@ function ModeToggle({
 
 // ---------------------------------------------------------------------------
 
-function Setup({
+const HERO = 'flex flex-col rounded-xl border border-line-strong bg-raised p-5 sm:p-7';
+const HERO_TITLE = 'font-display text-[1.625rem] leading-tight font-semibold sm:text-[2rem]';
+
+/** "gaveta, tigela, chaleira…": the words behind a number, so it means something. */
+function sampleOf(words: readonly Word[]): string {
+  const shown = words.slice(0, 3).map(promptOf).join(', ');
+  return words.length > 3 ? `${shown}…` : shown;
+}
+
+/** Where today's new words come from. */
+function freshLabel(fresh: readonly Word[], practiced: readonly Word[]): string {
+  const names = categoriesOf(fresh);
+  if (names.length === 0) return 'Nenhuma nesta sessão';
+  if (names.length > 1) return names.length === 2 ? names.join(' e ') : `${names[0]} e outras`;
+  const started = practiced.some((word) => word.category === names[0] && word.lastSeen !== null);
+  return `${started ? 'Continuando' : 'Começando'} ${names[0]}`;
+}
+
+function Home({
   words,
   ready,
   mode,
   toggle,
+  size,
+  onSize,
   onStart,
 }: {
   words: Word[];
   ready: boolean;
   mode: AnswerMode;
   toggle: ReactNode;
-  onStart: (category: string) => void;
+  size: SessionSize;
+  onSize: (size: SessionSize) => void;
+  onStart: (category: string, count: number) => void;
 }) {
-  const pastTenseCount = wordsIn(words, PAST_TENSE_CATEGORY).length;
-  const chips = [
-    { value: ALL_CATEGORIES, label: 'Todas', count: deckOf(words, ALL_CATEGORIES).length },
-    ...categoriesOf(words)
-      .filter((name) => name !== PAST_TENSE_CATEGORY)
-      .map((name) => ({ value: name, label: name, count: wordsIn(words, name).length })),
-  ];
+  const practiced = useMemo(() => deckOf(words, ALL_CATEGORIES), [words]);
+  const firstVisit = ready && !hasPracticed(words);
+  const count = firstVisit ? FIRST_SESSION_SIZE : size;
+  // Only once storage is in: "today" and the stats don't exist on the server.
+  const mix = useMemo(() => (ready ? dailyMix(practiced, count, isoDate()) : null), [ready, practiced, count]);
+
+  const pastTense = wordsIn(words, PAST_TENSE_CATEGORY);
+  const topics = categoriesOf(words).filter((name) => name !== PAST_TENSE_CATEGORY);
 
   return (
-    <section className="flex flex-col gap-8" aria-labelledby="setup-title">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 id="setup-title" className="font-display text-2xl font-semibold">
-          Escolha uma categoria
-        </h1>
-        {toggle}
-      </div>
+    <div className="flex flex-col gap-8">
+      {mix === null ? (
+        <section className={`${HERO} min-h-80`} aria-busy="true" aria-label="Carregando sua sessão" />
+      ) : mixSize(mix) === 0 ? (
+        <section className={HERO} aria-labelledby="today-title">
+          <div className="flex flex-col gap-1.5">
+            <h1 id="today-title" className={HERO_TITLE}>
+              Tudo em dia
+            </h1>
+            <p className="text-[15px] text-muted">Nada para revisar agora. Se quiser, treine um assunto abaixo.</p>
+          </div>
+        </section>
+      ) : firstVisit ? (
+        <section className={`${HERO} gap-7 sm:flex-row sm:items-center sm:justify-between`} aria-labelledby="today-title">
+          <div className="flex flex-col gap-2.5">
+            <h1 id="today-title" className={HERO_TITLE}>
+              Comece com {mixSize(mix)} palavras
+            </h1>
+            <p className="text-[15px] leading-normal text-muted">
+              A palavra aparece em português e você {mode === 'voice' ? 'fala' : 'digita'} em inglês. O que você errar volta
+              primeiro na próxima sessão.
+            </p>
+          </div>
+          <button type="button" className={`${PRIMARY} shrink-0`} onClick={() => onStart(ALL_CATEGORIES, count)}>
+            Começar por {mix.fresh[0]?.category}
+          </button>
+        </section>
+      ) : (
+        <section className={`${HERO} gap-4 sm:gap-7`} aria-labelledby="today-title">
+          <div className="flex flex-col gap-1.5">
+            <h1 id="today-title" className={HERO_TITLE}>
+              Sua sessão de hoje
+            </h1>
+            <p className="hidden text-[15px] text-muted sm:block">Primeiro o que você errou, depois o que está esquecendo, depois palavras novas.</p>
+          </div>
 
-      {pastTenseCount > 0 && (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted">Os verbos mais usados do inglês. Você vê o presente e escreve o passado.</p>
-          <PastTenseCard count={pastTenseCount} disabled={!ready} onStart={() => onStart(PAST_TENSE_CATEGORY)} />
-        </div>
+          <div className="grid gap-2 sm:grid-cols-3 sm:gap-3">
+            <MixTile count={mix.review.length} color="text-bad" label="Para revisar" note={sampleOf(mix.review) || 'Nenhuma agora'} />
+            <MixTile count={mix.stale.length} color="text-warn" label="Faz tempo" note="Sem ver há mais de 7 dias" />
+            <MixTile count={mix.fresh.length} color="text-accent" label="Novas" note={freshLabel(mix.fresh, practiced)} />
+          </div>
+
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-wrap items-start gap-2 sm:gap-4">
+              <SizePicker size={size} onSize={onSize} />
+              {toggle}
+            </div>
+            <button type="button" className={`${PRIMARY} w-full sm:w-auto`} onClick={() => onStart(ALL_CATEGORIES, count)}>
+              Começar {mixSize(mix)} {mixSize(mix) === 1 ? 'carta' : 'cartas'}
+            </button>
+          </div>
+        </section>
       )}
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">Português → inglês</h2>
-          <span className="text-sm text-muted">Em ordem aleatória</span>
+      <section className="flex flex-col gap-4" aria-labelledby="topics-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+          <h2 id="topics-title" className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">
+            {firstVisit ? 'Ou escolha outro assunto' : 'Ou treine um assunto'}
+          </h2>
+          {!firstVisit && (
+            <div className="flex flex-wrap gap-3.5 text-[13px] text-muted">
+              <LegendItem swatch="bg-accent" label="Firmes" />
+              <LegendItem swatch="bg-accent/45" label="Aprendendo" />
+              <LegendItem swatch="bg-line" label="Novas" />
+            </div>
+          )}
         </div>
-        {/* Room for the longer voice text, so the chips below stay put when you switch. */}
-        <p className="min-h-[3lh] text-sm text-muted sm:min-h-[2lh] md:min-h-[1lh]">
-          {mode === 'voice'
-            ? 'A palavra aparece em português; você fala em inglês, confere o que foi entendido e aperta Enter.'
-            : 'A palavra aparece em português; você digita em inglês e aperta Enter.'}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              disabled={!ready || chip.count === 0}
-              onClick={() => onStart(chip.value)}
-              className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg hover:border-accent hover:text-accent"
-            >
-              {chip.label}
-              <span className="font-mono text-xs text-muted">{chip.count}</span>
-            </button>
-          ))}
+
+        {pastTense.length > 0 && (
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => onStart(PAST_TENSE_CATEGORY, count)}
+            className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-lg border border-line bg-surface p-4 text-left hover:border-accent"
+          >
+            <span className="flex min-w-56 flex-1 flex-col gap-0.5">
+              <span className="text-[15px] font-semibold">{PAST_TENSE_CATEGORY}</span>
+              <span className="text-[13px] text-muted">Você vê o presente e escreve o passado</span>
+            </span>
+            {/* An example of the question, in place of explaining it further. */}
+            <span className="flex items-center gap-2 rounded-md bg-bg px-2.5 py-1.5 font-mono text-[13px]" lang="en" aria-hidden="true">
+              <span className="text-muted">go</span>
+              <ArrowRight size={12} weight="bold" className="text-dim" />
+              <span className="font-semibold text-accent">went</span>
+            </span>
+            <span className="flex min-w-56 flex-1 items-center gap-3">
+              {firstVisit ? (
+                <span className="font-mono text-xs text-muted">{pastTense.length} palavras</span>
+              ) : (
+                <>
+                  <ProgressBar progress={progressOf(pastTense)} />
+                  <ProgressCount progress={progressOf(pastTense)} />
+                </>
+              )}
+            </span>
+          </button>
+        )}
+
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {topics.map((name) => {
+            const deck = wordsIn(words, name);
+            const progress = progressOf(deck);
+            return (
+              <button
+                key={name}
+                type="button"
+                disabled={!ready}
+                onClick={() => onStart(name, count)}
+                className="flex min-h-16 flex-col justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-left hover:border-accent"
+              >
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-medium">{name}</span>
+                  {firstVisit ? <span className="font-mono text-xs text-muted">{deck.length}</span> : <ProgressCount progress={progress} />}
+                </span>
+                {firstVisit ? (
+                  <span className="truncate text-[13px] text-muted" lang="pt-BR">
+                    {sampleOf(deck)}
+                  </span>
+                ) : (
+                  <ProgressBar progress={progress} />
+                )}
+              </button>
+            );
+          })}
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
-/** A different kind of practice, so it stands apart from the Portuguese chips. */
-function PastTenseCard({ count, disabled, onStart }: { count: number; disabled: boolean; onStart: () => void }) {
+function MixTile({ count, color, label, note }: { count: number; color: string; label: string; note: string }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onStart}
-      className="flex flex-col gap-4 rounded-xl border-2 border-accent/35 bg-accent/5 p-5 text-left hover:border-accent hover:bg-accent/15 sm:flex-row sm:items-center sm:gap-5"
-    >
-      <span className="flex min-w-0 flex-1 items-center gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent text-bg">
-          <ClockCounterClockwise size={22} weight="bold" aria-hidden="true" />
-        </span>
-        <span className="font-display text-lg font-semibold text-fg">
-          {PAST_TENSE_CATEGORY} <span className="ml-1 font-mono text-xs font-normal text-muted">{count}</span>
-        </span>
+    // A row on a phone, so the start button stays on the first screen.
+    <div className="flex items-center gap-3 rounded-lg bg-bg px-3.5 py-2.5 sm:flex-col sm:items-start sm:gap-1.5 sm:p-4">
+      <span className={`w-8 shrink-0 font-mono text-xl font-semibold sm:w-auto sm:text-3xl ${color}`}>{count}</span>
+      <span className="flex min-w-0 flex-col sm:gap-1.5">
+        <span className="text-sm font-semibold">{label}</span>
+        <span className="text-[13px] text-muted">{note}</span>
       </span>
-      {/* An example of the question, in place of explaining it further. */}
-      <span className="flex shrink-0 items-center gap-2 self-start rounded-md bg-bg px-3 py-2 font-mono text-sm sm:self-auto" lang="en" aria-hidden="true">
-        <span className="text-muted">go</span>
-        <ArrowRight size={14} weight="bold" className="text-dim" />
-        <span className="font-semibold text-accent">went</span>
-      </span>
-    </button>
+    </div>
+  );
+}
+
+function SizePicker({ size, onSize }: { size: SessionSize; onSize: (size: SessionSize) => void }) {
+  return (
+    <div className="flex gap-1 rounded-md border border-line bg-surface p-1" role="radiogroup" aria-label="Tamanho da sessão">
+      {SESSION_SIZES.map((value) => (
+        <button
+          key={value}
+          type="button"
+          role="radio"
+          aria-checked={value === size}
+          aria-label={`${value} cartas`}
+          onClick={() => onSize(value)}
+          className={`h-11 min-w-11 rounded-sm font-mono text-sm font-semibold ${
+            value === size ? 'bg-raised text-accent' : 'text-muted hover:text-accent'
+          }`}
+        >
+          {value}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LegendItem({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`h-2.5 w-2.5 rounded-xs ${swatch}`} aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
+function ProgressBar({ progress }: { progress: WordProgress }) {
+  const percent = (part: number) => `${progress.total === 0 ? 0 : (part / progress.total) * 100}%`;
+  return (
+    <span className="flex h-1.5 w-full min-w-0 overflow-hidden rounded-full bg-line" aria-hidden="true">
+      <span className="bg-accent" style={{ width: percent(progress.firm) }} />
+      <span className="bg-accent/45" style={{ width: percent(progress.learning) }} />
+    </span>
+  );
+}
+
+function ProgressCount({ progress }: { progress: WordProgress }) {
+  return (
+    <span className="shrink-0 font-mono text-xs text-muted">
+      {progress.firm}/{progress.total}
+      <span className="sr-only"> firmes</span>
+    </span>
   );
 }
 
@@ -647,10 +832,10 @@ function Summary({
           </button>
         )}
         <button type="button" className={SECONDARY} onClick={onAgain}>
-          Treinar de novo
+          Continuar treinando
         </button>
         <button type="button" className={SECONDARY} onClick={onSetup}>
-          Outra categoria
+          Voltar ao início
         </button>
         <Link href="/vocabulary/words" className={SECONDARY}>
           Ver palavras
