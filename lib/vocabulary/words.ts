@@ -16,6 +16,8 @@ export type BuiltInWord = {
   english: string;
   alternatives: string[];
   category: string;
+  /** Past-tense verbs only: the present form shown on the card; `english` is its past. */
+  present?: string;
 };
 
 export type Word = BuiltInWord & {
@@ -26,7 +28,7 @@ export type Word = BuiltInWord & {
   lastSeen: string | null;
 };
 
-export type WordFields = Pick<Word, 'portuguese' | 'english' | 'alternatives' | 'category'>;
+export type WordFields = Pick<Word, 'portuguese' | 'english' | 'alternatives' | 'category' | 'present'>;
 
 export type WordStats = { right: number; wrong: number; lastSeen: string };
 
@@ -42,8 +44,20 @@ export const EMPTY_OVERLAY: Overlay = { v: 1, added: [], edited: {}, deleted: []
 
 const VOCABULARY_KEY = 'eartype:vocabulary';
 
+/** The one category asked in English: the present on the card, the past typed back. */
+export const PAST_TENSE_CATEGORY = 'Verbos no passado';
+
 // ---------------------------------------------------------------------------
 // Pure
+
+export function isPastTense(word: Pick<Word, 'category'>): boolean {
+  return word.category === PAST_TENSE_CATEGORY;
+}
+
+/** What the card asks: the present of a past-tense verb, otherwise the Portuguese. */
+export function promptOf(word: Pick<Word, 'category' | 'portuguese' | 'present'>): string {
+  return isPastTense(word) ? (word.present ?? word.portuguese) : word.portuguese;
+}
 
 /** The list you see: built-in words with your edits, minus deletes, plus yours. */
 export function mergeWords(builtIn: readonly BuiltInWord[], overlay: Overlay): Word[] {
@@ -73,15 +87,18 @@ export function cleanFields(fields: WordFields): WordFields {
   const alternatives = [
     ...new Set(fields.alternatives.map((alternative) => alternative.trim()).filter(Boolean)),
   ].filter((alternative) => alternative.toLowerCase() !== english.toLowerCase());
+  const present = fields.present?.trim();
   return {
     portuguese: fields.portuguese.trim(),
     english,
     alternatives,
     category: fields.category.trim(),
+    ...(present ? { present } : {}),
   };
 }
 
 export function isComplete(fields: WordFields): boolean {
+  if (isPastTense(fields) && !fields.present) return false;
   return fields.portuguese !== '' && fields.english !== '' && fields.category !== '';
 }
 
@@ -187,19 +204,20 @@ function isCount(value: unknown): value is number {
 
 function parseBuiltInWord(value: unknown): BuiltInWord | null {
   if (typeof value !== 'object' || value === null) return null;
-  const { id, portuguese, english, alternatives, category } = value as Record<string, unknown>;
+  const { id, portuguese, english, alternatives, category, present } = value as Record<string, unknown>;
   if (!isString(id) || id === '' || !isString(portuguese) || !isString(english) || !isString(category)) {
     return null;
   }
   if (!isStringList(alternatives)) return null;
-  return { id, portuguese, english, alternatives, category };
+  if (present !== undefined && !isString(present)) return null;
+  return { id, portuguese, english, alternatives, category, ...(present === undefined ? {} : { present }) };
 }
 
 function parseFields(value: unknown): Partial<WordFields> | null {
   if (typeof value !== 'object' || value === null) return null;
   const record = value as Record<string, unknown>;
   const fields: Partial<WordFields> = {};
-  for (const key of ['portuguese', 'english', 'category'] as const) {
+  for (const key of ['portuguese', 'english', 'category', 'present'] as const) {
     if (record[key] === undefined) continue;
     if (!isString(record[key])) return null;
     fields[key] = record[key];

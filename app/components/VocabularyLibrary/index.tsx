@@ -17,6 +17,8 @@ import {
   deleteWord,
   editWord,
   isComplete,
+  isPastTense,
+  promptOf,
   restoreWord,
   type Word,
   type WordFields,
@@ -51,6 +53,7 @@ export function VocabularyLibrary() {
         needle === '' ||
         fold(word.portuguese).includes(needle) ||
         fold(word.english).includes(needle) ||
+        fold(word.present ?? '').includes(needle) ||
         word.alternatives.some((alternative) => fold(alternative).includes(needle)),
     );
   }, [words, category, query]);
@@ -147,7 +150,7 @@ export function VocabularyLibrary() {
                   onEdit={() => setEditing(word.id)}
                   onRestore={() => update((current) => restoreWord(current, word.id))}
                   onDelete={() => {
-                    if (window.confirm(`Apagar “${word.portuguese}”?`)) update((current) => deleteWord(current, word.id));
+                    if (window.confirm(`Apagar “${promptOf(word)}”?`)) update((current) => deleteWord(current, word.id));
                   }}
                 />
               ),
@@ -182,6 +185,7 @@ function WordRow({
         {edited && <span className="ml-2 rounded-full bg-raised px-2 py-0.5 text-xs text-warn">editada</span>}
       </span>
       <span className="col-start-1 font-mono md:col-start-auto" lang="en">
+        {isPastTense(word) && <span className="text-muted">{promptOf(word)} → </span>}
         {word.english}
       </span>
       <span className="col-start-1 font-mono text-muted md:col-start-auto" lang="en">
@@ -206,10 +210,10 @@ function WordRow({
             <ArrowCounterClockwise size={16} weight="bold" aria-hidden="true" />
           </button>
         )}
-        <button type="button" onClick={onEdit} aria-label={`Editar ${word.portuguese}`} title="Editar" className={ICON_BUTTON}>
+        <button type="button" onClick={onEdit} aria-label={`Editar ${promptOf(word)}`} title="Editar" className={ICON_BUTTON}>
           <PencilSimple size={16} weight="bold" aria-hidden="true" />
         </button>
-        <button type="button" onClick={onDelete} aria-label={`Apagar ${word.portuguese}`} title="Apagar" className={ICON_BUTTON}>
+        <button type="button" onClick={onDelete} aria-label={`Apagar ${promptOf(word)}`} title="Apagar" className={ICON_BUTTON}>
           <Trash size={16} weight="bold" aria-hidden="true" />
         </button>
       </span>
@@ -234,9 +238,11 @@ function WordForm({
   const [english, setEnglish] = useState(initial?.english ?? '');
   const [alternatives, setAlternatives] = useState(initial?.alternatives.join(', ') ?? '');
   const [category, setCategory] = useState(initial?.category ?? categories[0] ?? '');
+  const [present, setPresent] = useState(initial?.present ?? '');
 
-  const fields = cleanFields({ portuguese, english, alternatives: alternatives.split(','), category });
+  const fields = cleanFields({ portuguese, english, alternatives: alternatives.split(','), category, present });
   const complete = isComplete(fields);
+  const pastTense = isPastTense(fields);
 
   return (
     <form
@@ -246,13 +252,19 @@ function WordForm({
         if (complete) onSave(fields);
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className={`grid gap-3 sm:grid-cols-2 ${pastTense ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-semibold">Português</span>
           <input value={portuguese} onChange={(event) => setPortuguese(event.target.value)} autoFocus lang="pt-BR" className={INPUT} />
         </label>
+        {pastTense && (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-semibold">Presente</span>
+            <input value={present} onChange={(event) => setPresent(event.target.value)} spellCheck={false} lang="en" className={`${INPUT} font-mono`} />
+          </label>
+        )}
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-semibold">Inglês</span>
+          <span className="font-semibold">{pastTense ? 'Passado' : 'Inglês'}</span>
           <input value={english} onChange={(event) => setEnglish(event.target.value)} spellCheck={false} lang="en" className={`${INPUT} font-mono`} />
         </label>
         <label className="flex flex-col gap-1 text-sm">

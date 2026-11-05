@@ -8,11 +8,15 @@
  * mode the field is the microphone's alone: what it heard lands there, you
  * speak again if it misheard, and you are the one who confirms. Every answer
  * is saved to the word's stats as you go, so stopping loses nothing.
+ *
+ * Past-tense verbs are the one deck asked in English: the present on the front,
+ * the past typed back. Always typed — a recognizer hears the past of `read` as
+ * `red` and of `know` as `new`, which would mark right answers wrong.
  */
 
-import { useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Keyboard, Microphone, X } from '@phosphor-icons/react';
+import { ArrowRight, Check, ClockCounterClockwise, Keyboard, Microphone, X } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { checkAnswer, type Verdict } from '@/lib/vocabulary/check';
 import { DEFAULT_MODE, loadMode, saveMode, type AnswerMode } from '@/lib/vocabulary/mode';
@@ -20,6 +24,7 @@ import {
   ALL_CATEGORIES,
   answerWord,
   currentWord,
+  deckOf,
   isAnswered,
   isFinished,
   nextWord,
@@ -29,7 +34,15 @@ import {
   wordsIn,
   type VocabSession,
 } from '@/lib/vocabulary/session';
-import { categoriesOf, recordAnswer, type Word } from '@/lib/vocabulary/words';
+import {
+  categoriesOf,
+  isPastTense,
+  PAST_TENSE_CATEGORY,
+  promptOf,
+  recordAnswer,
+  type Word,
+} from '@/lib/vocabulary/words';
+import { useDeckHistory } from './use-deck-history';
 import { useSpeech, type SpeechError } from './use-speech';
 
 const PRIMARY =
@@ -66,17 +79,33 @@ export function VocabularyPractice() {
   const [picked, setPicked] = useState<AnswerMode | null>(null);
   const mode = picked ?? saved;
   const speech = useSpeech();
+  const stopSpeech = speech.stop;
+  const { enterDeck, leaveDeck } = useDeckHistory(
+    useCallback(() => {
+      stopSpeech();
+      setSession(null);
+    }, [stopSpeech]),
+  );
 
-  const chooseMode = (next: AnswerMode) => {
+  const chooseMode =(next: AnswerMode) => {
     speech.stop();
     setPicked(next);
     saveMode(next);
   };
 
-  // A saved "voice" in a browser that can't do it falls back to typing.
-  const effectiveMode: AnswerMode = mode === 'voice' && speech.supported === false ? 'type' : mode;
+  // A saved "voice" falls back to typing, without losing the choice, in a
+  // browser that can't do it and in the deck that is always typed. The setup
+  // screen is not in any deck, so the toggle stays free there.
+  const typedOnly = session !== null && category === PAST_TENSE_CATEGORY;
+  const effectiveMode: AnswerMode = mode === 'voice' && (typedOnly || speech.supported === false) ? 'type' : mode;
   const toggle = (compact: boolean) => (
-    <ModeToggle mode={effectiveMode} voiceSupported={speech.supported} compact={compact} onMode={chooseMode} />
+    <ModeToggle
+      mode={effectiveMode}
+      voiceSupported={speech.supported}
+      typedOnly={typedOnly}
+      compact={compact}
+      onMode={chooseMode}
+    />
   );
 
   const start = (chosen: Word[]) => setSession(startVocabSession(chosen));
@@ -86,11 +115,13 @@ export function VocabularyPractice() {
       <Setup
         words={words}
         ready={ready}
-        category={category}
         mode={effectiveMode}
         toggle={toggle(false)}
-        onCategory={setCategory}
-        onStart={() => start(wordsIn(words, category))}
+        onStart={(chosen) => {
+          setCategory(chosen);
+          enterDeck();
+          start(deckOf(words, chosen));
+        }}
       />
     );
   }
@@ -100,9 +131,12 @@ export function VocabularyPractice() {
     return (
       <Summary
         session={session}
-        onAgain={() => start(wordsIn(words, category))}
+        onAgain={() => start(deckOf(words, category))}
         onMissed={() => start(summary.missed.map((answer) => answer.word))}
-        onSetup={() => setSession(null)}
+        onSetup={() => {
+          setSession(null);
+          leaveDeck();
+        }}
       />
     );
   }
@@ -141,18 +175,25 @@ export function VocabularyPractice() {
 function ModeToggle({
   mode,
   voiceSupported,
+  typedOnly,
   compact,
   onMode,
 }: {
   mode: AnswerMode;
   voiceSupported: boolean | null;
+  typedOnly: boolean;
   compact: boolean;
   onMode: (mode: AnswerMode) => void;
 }) {
   const options = [
     { value: 'type', label: 'Teclado', Icon: Keyboard, disabled: false },
-    { value: 'voice', label: 'Voz', Icon: Microphone, disabled: voiceSupported === false },
+    { value: 'voice', label: 'Voz', Icon: Microphone, disabled: typedOnly || voiceSupported === false },
   ] as const;
+  const voiceNote = typedOnly
+    ? 'Esta categoria é só digitada.'
+    : voiceSupported === false
+      ? 'Responder por voz precisa do Chrome ou do Edge.'
+      : null;
 
   return (
     <div className="flex flex-col items-start gap-1">
@@ -166,7 +207,7 @@ function ModeToggle({
               role="radio"
               aria-checked={active}
               aria-label={compact ? label : undefined}
-              title={compact ? (disabled ? 'Responder por voz precisa do Chrome ou do Edge' : label) : undefined}
+              title={compact ? (disabled ? (voiceNote ?? label) : label) : undefined}
               disabled={disabled}
               onClick={() => onMode(value)}
               className={`flex items-center gap-2 rounded-sm text-sm font-medium ${compact ? 'h-9 w-9 justify-center' : 'px-4 py-1.5'} ${
@@ -179,9 +220,7 @@ function ModeToggle({
           );
         })}
       </div>
-      {voiceSupported === false && !compact && (
-        <span className="text-xs text-dim">Responder por voz precisa do Chrome ou do Edge.</span>
-      )}
+      {voiceNote !== null && !compact && <span className="text-xs text-dim">{voiceNote}</span>}
     </div>
   );
 }
@@ -191,76 +230,94 @@ function ModeToggle({
 function Setup({
   words,
   ready,
-  category,
   mode,
   toggle,
-  onCategory,
   onStart,
 }: {
   words: Word[];
   ready: boolean;
-  category: string;
   mode: AnswerMode;
   toggle: ReactNode;
-  onCategory: (category: string) => void;
-  onStart: () => void;
+  onStart: (category: string) => void;
 }) {
-  const categories = categoriesOf(words);
-  const count = wordsIn(words, category).length;
+  const pastTenseCount = wordsIn(words, PAST_TENSE_CATEGORY).length;
   const chips = [
-    { value: ALL_CATEGORIES, label: 'Todas', count: words.length },
-    ...categories.map((name) => ({ value: name, label: name, count: wordsIn(words, name).length })),
+    { value: ALL_CATEGORIES, label: 'Todas', count: deckOf(words, ALL_CATEGORIES).length },
+    ...categoriesOf(words)
+      .filter((name) => name !== PAST_TENSE_CATEGORY)
+      .map((name) => ({ value: name, label: name, count: wordsIn(words, name).length })),
   ];
 
   return (
     <section className="flex flex-col gap-8" aria-labelledby="setup-title">
-      {/* No wrapping here: the voice text is longer, and a wrap would move the toggle when you switch. */}
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h1 id="setup-title" className="font-display text-2xl font-semibold">
-            Escolha uma categoria
-          </h1>
-          {/* Room for the longer voice text, so the chips below stay put when you switch. */}
-          <p className="min-h-[3lh] text-sm text-muted sm:min-h-[2lh]">
-            {mode === 'voice'
-              ? 'A palavra aparece em português; você fala em inglês, confere o que foi entendido e aperta Enter.'
-              : 'A palavra aparece em português; você digita em inglês e aperta Enter.'}
-          </p>
-        </div>
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 id="setup-title" className="font-display text-2xl font-semibold">
+          Escolha uma categoria
+        </h1>
         {toggle}
       </div>
 
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Categoria">
-        {chips.map((chip) => {
-          const active = chip.value === category;
-          return (
+      {pastTenseCount > 0 && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted">Os verbos mais usados do inglês. Você vê o presente e escreve o passado.</p>
+          <PastTenseCard count={pastTenseCount} disabled={!ready} onStart={() => onStart(PAST_TENSE_CATEGORY)} />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="text-[13px] font-semibold tracking-[0.08em] text-muted uppercase">Português → inglês</h2>
+          <span className="text-sm text-muted">Em ordem aleatória</span>
+        </div>
+        {/* Room for the longer voice text, so the chips below stay put when you switch. */}
+        <p className="min-h-[3lh] text-sm text-muted sm:min-h-[2lh] md:min-h-[1lh]">
+          {mode === 'voice'
+            ? 'A palavra aparece em português; você fala em inglês, confere o que foi entendido e aperta Enter.'
+            : 'A palavra aparece em português; você digita em inglês e aperta Enter.'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {chips.map((chip) => (
             <button
               key={chip.value}
               type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onCategory(chip.value)}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
-                active ? 'border-accent bg-raised text-accent' : 'border-line bg-surface text-fg hover:border-accent'
-              }`}
+              disabled={!ready || chip.count === 0}
+              onClick={() => onStart(chip.value)}
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-medium text-fg hover:border-accent hover:text-accent"
             >
               {chip.label}
               <span className="font-mono text-xs text-muted">{chip.count}</span>
             </button>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4">
-        <button type="button" className={PRIMARY} disabled={!ready || count === 0} onClick={onStart}>
-          Começar
-          <ArrowRight size={18} weight="bold" aria-hidden="true" />
-        </button>
-        <span className="text-sm text-muted">
-          {count} {count === 1 ? 'palavra' : 'palavras'}, em ordem aleatória
-        </span>
+          ))}
+        </div>
       </div>
     </section>
+  );
+}
+
+/** A different kind of practice, so it stands apart from the Portuguese chips. */
+function PastTenseCard({ count, disabled, onStart }: { count: number; disabled: boolean; onStart: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onStart}
+      className="flex flex-col gap-4 rounded-xl border-2 border-accent/35 bg-accent/5 p-5 text-left hover:border-accent hover:bg-accent/15 sm:flex-row sm:items-center sm:gap-5"
+    >
+      <span className="flex min-w-0 flex-1 items-center gap-4">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent text-bg">
+          <ClockCounterClockwise size={22} weight="bold" aria-hidden="true" />
+        </span>
+        <span className="font-display text-lg font-semibold text-fg">
+          {PAST_TENSE_CATEGORY} <span className="ml-1 font-mono text-xs font-normal text-muted">{count}</span>
+        </span>
+      </span>
+      {/* An example of the question, in place of explaining it further. */}
+      <span className="flex shrink-0 items-center gap-2 self-start rounded-md bg-bg px-3 py-2 font-mono text-sm sm:self-auto" lang="en" aria-hidden="true">
+        <span className="text-muted">go</span>
+        <ArrowRight size={14} weight="bold" className="text-dim" />
+        <span className="font-semibold text-accent">went</span>
+      </span>
+    </button>
   );
 }
 
@@ -365,13 +422,13 @@ function Play({
                 {word.category}
               </span>
               <div className="flex flex-1 items-center justify-center py-4 text-center">
-                <span className="font-display text-4xl font-semibold break-words sm:text-5xl" lang="pt-BR">
-                  {word.portuguese}
+                <span className="font-display text-4xl font-semibold break-words sm:text-5xl" lang={isPastTense(word) ? 'en' : 'pt-BR'}>
+                  {promptOf(word)}
                 </span>
               </div>
 
               <label htmlFor="vocabulary-answer" className="text-sm font-semibold">
-                Em inglês
+                {isPastTense(word) ? 'No passado' : 'Em inglês'}
               </label>
               <div
                 className={`relative flex h-14 items-center gap-1.5 rounded-md border bg-bg pr-1.5 pl-4 ${
@@ -504,8 +561,16 @@ function CardBack({ verdict, word, typed }: { verdict: Verdict; word: Word; type
         {verdict === 'almost' && ' — confira a grafia'}
       </span>
       <span className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-        <span className="text-muted" lang="pt-BR">
-          {word.portuguese}
+        <span className="text-muted">
+          {isPastTense(word) && (
+            <>
+              <span className="font-mono" lang="en">
+                {promptOf(word)}
+              </span>
+              {' · '}
+            </>
+          )}
+          <span lang="pt-BR">{word.portuguese}</span>
         </span>
         <span className="font-mono text-3xl font-semibold break-all sm:text-4xl" lang="en">
           {word.english}
@@ -564,7 +629,7 @@ function Summary({
           <ul className="flex flex-col divide-y divide-line-soft rounded-md border border-line bg-surface">
             {missed.map((answer) => (
               <li key={answer.word.id} className="flex flex-wrap items-baseline gap-x-4 gap-y-1 px-4 py-3">
-                <span className="min-w-32 font-medium">{answer.word.portuguese}</span>
+                <span className="min-w-32 font-medium">{promptOf(answer.word)}</span>
                 <span className="font-mono text-ok">{answer.word.english}</span>
                 <span className={`font-mono text-sm line-through ${answer.verdict === 'almost' ? 'text-warn' : 'text-bad'}`}>
                   {answer.typed}

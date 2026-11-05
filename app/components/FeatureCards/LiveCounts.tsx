@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { CircleHalf, ListBullets, SquaresFour } from '@phosphor-icons/react';
+import { CircleHalf, ClockCounterClockwise, ListBullets, SquaresFour } from '@phosphor-icons/react';
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { answeredCount, listProgress, PROGRESS_CHANGED } from '@/lib/practice/progress';
-import { categoriesOf } from '@/lib/vocabulary/words';
+import { categoriesOf, isPastTense } from '@/lib/vocabulary/words';
 
 export const CHIP = 'inline-flex items-center gap-1.5 rounded-full bg-raised px-2.5 py-1 text-xs text-muted';
 
@@ -45,6 +45,7 @@ export function InProgressChip() {
 export function VocabularyChips() {
   const { words } = useVocabulary();
   const categories = categoriesOf(words).length;
+  const verbs = words.filter(isPastTense).length;
 
   return (
     <>
@@ -56,6 +57,12 @@ export function VocabularyChips() {
         <SquaresFour size={14} weight="bold" aria-hidden="true" />
         {categories} categorias
       </span>
+      {verbs > 0 && (
+        <span className={`${CHIP} text-accent`}>
+          <ClockCounterClockwise size={14} weight="bold" aria-hidden="true" />
+          {verbs} {verbs === 1 ? 'verbo' : 'verbos'} no passado
+        </span>
+      )}
     </>
   );
 }
