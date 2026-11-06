@@ -1,0 +1,887 @@
+2
+00:00:11,632 --> 00:00:16,929
+Software engineers have a delightful practice called rubber ducking.
+
+3
+00:00:17,722 --> 00:00:20,516
+When they run into a problem with their code.
+
+4
+00:00:20,516 --> 00:00:23,227
+They'll explain it to a rubber duck.
+
+5
+00:00:24,228 --> 00:00:27,648
+They'll work step by step, line by line,
+
+6
+00:00:28,316 --> 00:00:31,277
+and some of the time they'll learn something new.
+
+7
+00:00:32,361 --> 00:00:34,030
+But how can this work?
+
+8
+00:00:34,864 --> 00:00:36,282
+The ducks don't talk back,
+
+9
+00:00:36,949 --> 00:00:38,993
+so the programmers are explaining
+
+10
+00:00:39,160 --> 00:00:44,457
+to themselves they're not getting any new information.
+
+11
+00:00:45,583 --> 00:00:50,463
+And yet something about this process helps them learn.
+
+12
+00:00:51,631 --> 00:00:56,886
+Rubber ducking is an example of what I call learning by thinking
+
+13
+00:00:57,970 --> 00:01:02,183
+and understanding how learning by thinking works is the key
+
+14
+00:01:02,183 --> 00:01:04,018
+to becoming a better learner.
+
+15
+00:01:05,269 --> 00:01:07,939
+Now most of us want to be better learners.
+
+16
+00:01:08,606 --> 00:01:11,776
+That's because we want to make our minds better, more effective,
+
+17
+00:01:11,776 --> 00:01:12,860
+and more informed.
+
+18
+00:01:13,903 --> 00:01:17,490
+But learning can be hard, and in the years ahead,
+
+19
+00:01:17,490 --> 00:01:20,952
+we'll have access to more and more tools and to more
+
+20
+00:01:20,952 --> 00:01:25,748
+and more information through the internet and social media and AI
+
+21
+00:01:26,916 --> 00:01:32,255
+and more information can make learning harder rather than easier.
+
+22
+00:01:33,256 --> 00:01:36,300
+We run the risk of information overwhelm.
+
+23
+00:01:37,593 --> 00:01:39,762
+Part of the problem is that we tend
+
+24
+00:01:39,762 --> 00:01:45,685
+to approach learning by looking outside of ourselves for more information,
+
+25
+00:01:46,727 --> 00:01:49,939
+but that can just exacerbate the overwhelm.
+
+26
+00:01:50,940 --> 00:01:51,941
+Instead,
+
+27
+00:01:52,775 --> 00:01:54,902
+we could be learning by thinking.
+
+28
+00:01:54,902 --> 00:01:58,823
+We could be starting with the information we already have.
+
+29
+00:02:00,241 --> 00:02:04,912
+I'm a cognitive scientist and I've been studying learning for over 25 years.
+
+30
+00:02:05,746 --> 00:02:09,250
+One thing I've come to appreciate is that our minds are richer
+
+31
+00:02:09,667 --> 00:02:12,753
+and deeper than we often give them credit for.
+
+32
+00:02:13,504 --> 00:02:17,675
+In fact, our minds contain vast repositories of knowledge.
+
+33
+00:02:18,176 --> 00:02:22,138
+Knowledge that's contained in our memories and our skills.
+
+34
+00:02:23,181 --> 00:02:26,976
+Learning by thinking is the process of tapping into that knowledge
+
+35
+00:02:27,310 --> 00:02:28,853
+to become a better learner.
+
+36
+00:02:29,979 --> 00:02:32,982
+To give you a sense for learning by thinking in action,
+
+37
+00:02:32,982 --> 00:02:34,984
+I'd like to ask you a few questions.
+
+38
+00:02:35,568 --> 00:02:38,487
+As soon as you have an answer, please raise your hand.
+
+39
+00:02:39,363 --> 00:02:40,364
+You ready?
+
+40
+00:02:42,783 --> 00:02:48,456
+How many windows are along the front of your house or apartment?
+
+41
+00:02:55,796 --> 00:02:59,175
+What is the fifth letter of the alphabet?
+
+42
+00:03:05,181 --> 00:03:11,103
+Is the letter Z on the left or the right side of a typical keyboard?
+
+43
+00:03:17,568 --> 00:03:21,072
+I'll bet that many of you didn't know the answers
+
+44
+00:03:21,072 --> 00:03:23,449
+to these questions immediately,
+
+45
+00:03:24,408 --> 00:03:27,495
+but you had the knowledge you needed to figure them out.
+
+46
+00:03:28,329 --> 00:03:30,248
+You could use your visual memories
+
+47
+00:03:30,414 --> 00:03:33,918
+to count the number of windows along the front of your home.
+
+48
+00:03:33,918 --> 00:03:35,878
+You could use your auditory memories
+
+49
+00:03:36,003 --> 00:03:39,757
+to figure out that E is the fifth letter of the alphabet,
+
+50
+00:03:39,757 --> 00:03:43,552
+and you could use your motor skills to figure out that the letter Z
+
+51
+00:03:43,719 --> 00:03:46,681
+on the left side of a typical keyboard.
+
+52
+00:03:47,807 --> 00:03:50,810
+These simple examples highlight the richness
+
+53
+00:03:50,851 --> 00:03:54,146
+and depth of the knowledge you already have,
+
+54
+00:03:54,897 --> 00:03:58,025
+and they illustrate the process of learning by thinking.
+
+55
+00:03:59,652 --> 00:04:03,739
+But recognizing that you have untapped knowledge is not enough
+
+56
+00:04:03,739 --> 00:04:06,033
+to become a better learner.
+
+57
+00:04:06,033 --> 00:04:09,912
+That's because you also need to know how to extract that knowledge
+
+58
+00:04:10,246 --> 00:04:11,247
+when you need it.
+
+59
+00:04:12,957 --> 00:04:16,043
+Suppose you decide to bake chocolate chip cookies,
+
+60
+00:04:16,961 --> 00:04:20,548
+but the recipe calls for chocolate chips and for salted butter,
+
+61
+00:04:20,923 --> 00:04:22,967
+neither of which you already have.
+
+62
+00:04:24,302 --> 00:04:28,014
+Fortunately, you can transform that bar of chocolate you do have
+
+63
+00:04:28,264 --> 00:04:31,267
+into the chocolate pieces you need for the recipe,
+
+64
+00:04:31,267 --> 00:04:35,396
+and you can combine unsalted butter with salt to get salted butter.
+
+65
+00:04:35,938 --> 00:04:39,525
+This is probably familiar when we're cooking,
+
+66
+00:04:39,817 --> 00:04:43,571
+we often transform and combine the ingredients we have
+
+67
+00:04:44,238 --> 00:04:46,073
+to get the ingredients we need.
+
+68
+00:04:47,116 --> 00:04:50,870
+It's just the same for learning when we're learning by thinking.
+
+69
+00:04:51,162 --> 00:04:57,877
+We transform and combine the information we already have to see how this works.
+
+70
+00:04:58,169 --> 00:05:02,298
+Consider that information can be represented in all sorts of ways.
+
+71
+00:05:02,298 --> 00:05:07,386
+Until today, you probably represented the windows along the front of your home,
+
+72
+00:05:07,887 --> 00:05:12,850
+not in the form of a single number, but as a series of visual memories.
+
+73
+00:05:13,976 --> 00:05:18,856
+So when you transform and combine those memories to extract a single number,
+
+74
+00:05:19,106 --> 00:05:20,399
+you learn something new.
+
+75
+00:05:20,816 --> 00:05:24,570
+You learn how many windows along the front of your home.
+
+76
+00:05:24,570 --> 00:05:28,991
+And so you can answer a question that you couldn't answer before.
+
+77
+00:05:29,992 --> 00:05:32,703
+That's the magic of learning by thinking.
+
+78
+00:05:34,121 --> 00:05:35,831
+There is a catch, though.
+
+79
+00:05:36,415 --> 00:05:39,001
+Not all learning can be done by thinking alone.
+
+80
+00:05:39,710 --> 00:05:41,796
+If I've never been to your home.
+
+81
+00:05:42,046 --> 00:05:45,216
+I can't think my way to how many windows you have.
+
+82
+00:05:45,466 --> 00:05:47,176
+I need new information.
+
+83
+00:05:48,386 --> 00:05:53,974
+But asking myself how many windows you have sets me up to learn so that
+
+84
+00:05:53,974 --> 00:05:58,771
+when I do make it to your home, I know precisely what information to look for.
+
+85
+00:06:00,106 --> 00:06:03,818
+That's why learning by thinking is so often the best place to start.
+
+86
+00:06:04,652 --> 00:06:07,029
+Going back to our chocolate chip cookies,
+
+87
+00:06:07,029 --> 00:06:10,241
+it makes sense to look at the ingredients you have already
+
+88
+00:06:10,658 --> 00:06:13,202
+before you start making a shopping list.
+
+89
+00:06:14,787 --> 00:06:19,917
+Unfortunately though, when it comes to learning, we don't have a recipe.
+
+90
+00:06:20,876 --> 00:06:25,089
+There's no single strategy for learning that guarantees the best outcome
+
+91
+00:06:25,089 --> 00:06:29,510
+in every case. But there's one strategy that comes close.
+
+92
+00:06:30,428 --> 00:06:35,891
+It's a version of learning by thinking that involves seeking explanations.
+
+93
+00:06:37,643 --> 00:06:41,105
+In the late 1980s, scientists wanted
+
+94
+00:06:41,105 --> 00:06:45,484
+to understand what it is that differentiates the most successful
+
+95
+00:06:45,484 --> 00:06:48,863
+students from their less successful peers.
+
+96
+00:06:49,822 --> 00:06:53,534
+Even when students have access to exactly the same information,
+
+97
+00:06:53,534 --> 00:06:57,830
+the same textbooks, the same passage of text on an exam.
+
+98
+00:06:58,581 --> 00:07:01,959
+How much they learn can vary enormously.
+
+99
+00:07:03,252 --> 00:07:07,882
+So what sets those best learners apart can't just be the information
+
+100
+00:07:07,882 --> 00:07:10,551
+available outside their heads.
+
+101
+00:07:11,260 --> 00:07:14,972
+It has to be something about what they do with that information.
+
+102
+00:07:16,390 --> 00:07:21,270
+The scientists found that many of the most successful students had something
+
+103
+00:07:21,270 --> 00:07:22,271
+in common.
+
+104
+00:07:23,272 --> 00:07:27,318
+As they studied, they explained to themselves.
+
+105
+00:07:28,527 --> 00:07:34,033
+They asked themselves questions, and they did their best to offer good replies.
+
+106
+00:07:35,242 --> 00:07:37,703
+They were their own rubber ducks.
+
+107
+00:07:39,455 --> 00:07:43,501
+Since then, lots of studies have found that explaining
+
+108
+00:07:43,542 --> 00:07:48,255
+to yourself can have a dramatic impact on learning across a range of contexts
+
+109
+00:07:48,255 --> 00:07:49,381
+and a range of domains.
+
+110
+00:07:50,257 --> 00:07:54,094
+When children or adults explain to themselves,
+
+111
+00:07:54,929 --> 00:07:56,472
+they tend to learn better
+
+112
+00:07:57,181 --> 00:08:01,685
+and can apply what they learned more broadly than those who don't explain.
+
+113
+00:08:03,145 --> 00:08:06,315
+This is known as the Self-explanation effect,
+
+114
+00:08:06,774 --> 00:08:10,110
+and it is a powerful strategy for learning by thinking.
+
+115
+00:08:12,154 --> 00:08:15,074
+Let me give you an example from my own research.
+
+116
+00:08:15,074 --> 00:08:19,620
+It's an example that shows how children can transform the way
+
+117
+00:08:19,620 --> 00:08:22,873
+they represent information by explaining.
+
+118
+00:08:24,166 --> 00:08:26,752
+Just for fun. We'll illustrate with ducks.
+
+119
+00:08:27,711 --> 00:08:31,048
+I'd like you to imagine a card with two ducks on it.
+
+120
+00:08:32,341 --> 00:08:34,468
+We'll call it the reference card.
+
+121
+00:08:35,469 --> 00:08:37,555
+Now imagine two new cards.
+
+122
+00:08:38,264 --> 00:08:43,269
+One has two frogs, the other has one duck and one fox.
+
+123
+00:08:44,436 --> 00:08:49,316
+You have to choose which of the two new cards goes with the reference card.
+
+124
+00:08:50,943 --> 00:08:53,946
+Take a moment to consider which you would choose.
+
+125
+00:08:57,533 --> 00:09:02,830
+Most research, including my own, finds that in a case like this one,
+
+126
+00:09:03,455 --> 00:09:07,334
+adults will typically choose the card with two frogs to go
+
+127
+00:09:07,376 --> 00:09:08,919
+with a card with two ducks.
+
+128
+00:09:09,920 --> 00:09:15,384
+That's because they don't only represent the cards as having a frog and a frog
+
+129
+00:09:15,718 --> 00:09:16,927
+and a duck and a duck.
+
+130
+00:09:17,928 --> 00:09:23,017
+They also represent them as having the same objects and the same objects.
+
+131
+00:09:23,851 --> 00:09:25,978
+When you represent the cards in this way,
+
+132
+00:09:26,604 --> 00:09:30,399
+it's natural to pair the two sets of matching objects together.
+
+133
+00:09:32,067 --> 00:09:33,152
+So what about kids?
+
+134
+00:09:34,445 --> 00:09:39,575
+Five and six year old children will typically choose the card with one duck
+
+135
+00:09:39,575 --> 00:09:43,162
+and one fox to go with a card with two ducks.
+
+136
+00:09:44,580 --> 00:09:49,668
+That’s because they represent the reference card as having duck and a duck.
+
+137
+00:09:50,461 --> 00:09:54,882
+So a card with one duck on it will be more similar to it than a card
+
+138
+00:09:54,882 --> 00:09:56,216
+with no ducks at all.
+
+139
+00:09:56,216 --> 00:09:58,802
+Will children do this even
+
+140
+00:09:58,802 --> 00:10:03,015
+when they're shown plenty of examples to make it clearer that in this task,
+
+141
+00:10:03,807 --> 00:10:07,936
+the right answer is the adult pattern of matching same with same.
+
+142
+00:10:09,355 --> 00:10:10,814
+But in one of our studies,
+
+143
+00:10:11,273 --> 00:10:13,108
+we were able to make five
+
+144
+00:10:13,108 --> 00:10:19,323
+and six year old children think like adults by prompting them to explain.
+
+145
+00:10:20,449 --> 00:10:25,371
+After seeing examples equivalent to the card with two frogs being paired
+
+146
+00:10:25,371 --> 00:10:27,581
+with a card with two ducks.
+
+147
+00:10:27,581 --> 00:10:33,420
+We prompted half the children to explain why those cards went together.
+
+148
+00:10:34,755 --> 00:10:40,511
+We didn't give them any feedback, so they didn't have any new information yet.
+
+149
+00:10:40,552 --> 00:10:44,848
+Those kids, who explained went on to pair new sets of cards,
+
+150
+00:10:44,848 --> 00:10:47,643
+just like adults matching same
+
+151
+00:10:47,851 --> 00:10:53,440
+with same by explaining they changed the way they represented
+
+152
+00:10:53,440 --> 00:10:55,859
+the information to solve the task.
+
+153
+00:10:58,278 --> 00:11:00,656
+Explaining has another remarkable property.
+
+154
+00:11:00,989 --> 00:11:03,158
+It's one I've hinted at already.
+
+155
+00:11:03,158 --> 00:11:05,411
+Explaining sets you up to learn.
+
+156
+00:11:06,745 --> 00:11:12,626
+My friend Roxanna has a young son who asked her one day how tornadoes start.
+
+157
+00:11:13,502 --> 00:11:16,839
+She'd taken a class on climate and natural disasters in college,
+
+158
+00:11:16,839 --> 00:11:19,758
+so she thought she could explain it pretty well.
+
+159
+00:11:19,758 --> 00:11:22,720
+She started to describe how there's a difference in pressure,
+
+160
+00:11:22,720 --> 00:11:25,097
+and then she drew a blank.
+
+161
+00:11:26,390 --> 00:11:28,308
+What sets it off? She didn't know.
+
+162
+00:11:28,976 --> 00:11:32,020
+How exactly does low pressure produce a funnel?
+
+163
+00:11:32,020 --> 00:11:33,021
+She couldn't say.
+
+164
+00:11:34,022 --> 00:11:38,527
+She told me that she realized she knew nothing.
+
+165
+00:11:40,696 --> 00:11:45,659
+I suspect that all of us have had an experience like this one.
+
+166
+00:11:46,910 --> 00:11:51,290
+An experience of trying to explain something and realizing,
+
+167
+00:11:51,290 --> 00:11:55,878
+the course of doing so that we understand much less than we thought we did.
+
+168
+00:11:57,254 --> 00:12:02,176
+It's a phenomenon called the illusion of explanatory depth.
+
+169
+00:12:03,594 --> 00:12:07,222
+And this illusion points to another reason why it's
+
+170
+00:12:07,222 --> 00:12:10,809
+so valuable to start the process of learning from within
+
+171
+00:12:11,268 --> 00:12:13,520
+with the information we have already.
+
+172
+00:12:14,730 --> 00:12:18,400
+When we start to transform and combine what we know
+
+173
+00:12:19,026 --> 00:12:22,696
+or what we think we know to craft an explanation,
+
+174
+00:12:23,739 --> 00:12:28,494
+we often uncover gaps that point us to the information we're missing.
+
+175
+00:12:29,620 --> 00:12:31,830
+So we know what questions to ask
+
+176
+00:12:32,122 --> 00:12:35,626
+and how to connect the answers to what we know already.
+
+177
+00:12:36,752 --> 00:12:40,839
+By trying to explain, Roxana identified a gap,
+
+178
+00:12:40,839 --> 00:12:45,052
+something she needed to know how it is that low pressure relates
+
+179
+00:12:45,052 --> 00:12:46,303
+to a tornado's funnel.
+
+180
+00:12:47,346 --> 00:12:50,766
+She knew what needed to go on her information shopping list,
+
+181
+00:12:52,684 --> 00:12:55,103
+knowing what we're missing.
+
+182
+00:12:55,813 --> 00:13:02,236
+What to look for can be a first step in navigating information overwhelm.
+
+183
+00:13:03,695 --> 00:13:06,615
+That's crucial because in the years ahead,
+
+184
+00:13:07,032 --> 00:13:10,118
+that overwhelm will only become worse.
+
+185
+00:13:11,036 --> 00:13:16,750
+Tools getting and synthesizing information will be all the more pervasive,
+
+186
+00:13:17,543 --> 00:13:21,129
+and will be tempted to solve problems by turning first
+
+187
+00:13:21,338 --> 00:13:24,550
+to the information available outside our heads.
+
+188
+00:13:25,467 --> 00:13:30,514
+We'll be tempted to rely on AI generated responses to our search queries
+
+189
+00:13:31,098 --> 00:13:33,767
+and on the explanations we can get from chatbots.
+
+190
+00:13:34,893 --> 00:13:40,816
+These are incredible tools, but they shouldn’t replace learning by thinking.
+
+191
+00:13:41,650 --> 00:13:44,778
+If we don't start with the information we have already,
+
+192
+00:13:45,571 --> 00:13:48,365
+we outsource the process of transforming
+
+193
+00:13:48,365 --> 00:13:53,579
+and combining that information that sets us up to seek the right information
+
+194
+00:13:54,204 --> 00:13:56,206
+and to make sense of that information.
+
+195
+00:13:56,206 --> 00:13:57,207
+When we get it,
+
+196
+00:13:58,333 --> 00:14:03,714
+we become poor at policing the boundaries between what we know inside our heads
+
+197
+00:14:04,298 --> 00:14:07,509
+and what we merely have access to outside them.
+
+198
+00:14:08,760 --> 00:14:13,307
+We fall prey to illusions of understanding.
+
+199
+00:14:15,559 --> 00:14:19,313
+But now you know how to break free from those illusions
+
+200
+00:14:20,898 --> 00:14:22,524
+by seeking explanations.
+
+201
+00:14:23,775 --> 00:14:25,611
+When you explain to yourself,
+
+202
+00:14:26,111 --> 00:14:31,909
+you transform and combine the information you have to answer new questions.
+
+203
+00:14:33,744 --> 00:14:35,537
+When you explain to yourself,
+
+204
+00:14:36,038 --> 00:14:39,875
+you're more likely to recognize what it is you don't know.
+
+205
+00:14:39,875 --> 00:14:41,627
+And so you know what to look for
+
+206
+00:14:41,919 --> 00:14:44,963
+when it's time to shift from learning by thinking
+
+207
+00:14:44,963 --> 00:14:46,924
+to learning from new information.
+
+208
+00:14:48,675 --> 00:14:52,930
+Unfortunately, learning by thinking will not make learning easy,
+
+209
+00:14:53,972 --> 00:14:56,058
+but it means your effort isn't wasted.
+
+210
+00:14:56,475 --> 00:15:00,437
+It gives you a path through information, overwhelm to insight.
+
+211
+00:15:01,772 --> 00:15:05,192
+And learning by thinking won't eliminate the need for new information,
+
+212
+00:15:05,192 --> 00:15:07,152
+at least in lots of cases.
+
+213
+00:15:08,111 --> 00:15:10,197
+But it helps you know where to look.
+
+214
+00:15:10,197 --> 00:15:15,285
+It helps you know what you're missing and what to do with new information
+
+215
+00:15:15,452 --> 00:15:16,453
+when you get it.
+
+216
+00:15:17,621 --> 00:15:19,289
+So to be a better learner,
+
+217
+00:15:20,207 --> 00:15:23,377
+don't start with the information outside
+
+218
+00:15:23,377 --> 00:15:25,045
+your head.
+
+219
+00:15:25,087 --> 00:15:27,381
+Look inside first.
+
+220
+00:15:28,340 --> 00:15:30,300
+Take a moment.
+
+221
+00:15:32,344 --> 00:15:34,846
+To ask yourself questions.
+
+222
+00:15:35,889 --> 00:15:38,392
+To explain to yourself.
+
+223
+00:15:39,685 --> 00:15:45,148
+Be your own rubber duck. Thank you.
