@@ -21,6 +21,8 @@ import { ArrowRight, Check, Keyboard, Microphone, X } from '@phosphor-icons/reac
 import { useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { checkAnswer, type Verdict } from '@/lib/vocabulary/check';
 import {
+  ALL_WORDS,
+  cardCount,
   dailyMix,
   dailyQueue,
   DEFAULT_SESSION_SIZE,
@@ -90,7 +92,7 @@ const SPEECH_ERRORS: Record<SpeechError, string> = {
 export function VocabularyPractice() {
   const { words, ready, update } = useVocabulary();
   // What's being practiced, so "keep going" can deal more of the same. All means today's mix.
-  const [deck, setDeck] = useState<{ category: string; size: number }>({ category: ALL_CATEGORIES, size: DEFAULT_SESSION_SIZE });
+  const [deck, setDeck] = useState<{ category: string; size: SessionSize }>({ category: ALL_CATEGORIES, size: DEFAULT_SESSION_SIZE });
   const category = deck.category;
   const [session, setSession] = useState<VocabSession | null>(null);
   const savedSize = useSyncExternalStore(subscribeStorage, loadSessionSize, () => DEFAULT_SESSION_SIZE);
@@ -134,10 +136,13 @@ export function VocabularyPractice() {
   const start = (chosen: Word[]) => setSession(startVocabSession(chosen));
 
   /** Today's mix keeps its priority order; a subject is just shuffled. */
-  const deal = (chosen: string, count: number): VocabSession =>
-    chosen === ALL_CATEGORIES
-      ? dealVocabSession(dailyQueue(dailyMix(deckOf(words, ALL_CATEGORIES), count)))
-      : startVocabSession(topicDeck(deckOf(words, chosen), count));
+  const deal = (chosen: string, size: SessionSize): VocabSession => {
+    const pool = deckOf(words, chosen);
+    const count = cardCount(size, pool.length);
+    return chosen === ALL_CATEGORIES
+      ? dealVocabSession(dailyQueue(dailyMix(pool, count)))
+      : startVocabSession(topicDeck(pool, count));
+  };
 
   const backHome = () => {
     setSession(null);
@@ -301,13 +306,16 @@ function Home({
   toggle: ReactNode;
   size: SessionSize;
   onSize: (size: SessionSize) => void;
-  onStart: (category: string, count: number) => void;
+  onStart: (category: string, size: SessionSize) => void;
 }) {
   const practiced = useMemo(() => deckOf(words, ALL_CATEGORIES), [words]);
   const firstVisit = ready && !hasPracticed(words);
   const count = firstVisit ? FIRST_SESSION_SIZE : size;
   // Only once storage is in: "today" and the stats don't exist on the server.
-  const mix = useMemo(() => (ready ? dailyMix(practiced, count, isoDate()) : null), [ready, practiced, count]);
+  const mix = useMemo(
+    () => (ready ? dailyMix(practiced, cardCount(count, practiced.length), isoDate()) : null),
+    [ready, practiced, count],
+  );
 
   const pastTense = wordsIn(words, PAST_TENSE_CATEGORY);
   const topics = categoriesOf(words).filter((name) => name !== PAST_TENSE_CATEGORY);
@@ -465,13 +473,13 @@ function SizePicker({ size, onSize }: { size: SessionSize; onSize: (size: Sessio
           type="button"
           role="radio"
           aria-checked={value === size}
-          aria-label={`${value} cartas`}
+          aria-label={value === ALL_WORDS ? 'Todas as cartas' : `${value} cartas`}
           onClick={() => onSize(value)}
-          className={`h-11 min-w-11 rounded-sm font-mono text-sm font-semibold ${
+          className={`h-11 min-w-11 rounded-sm px-2 font-mono text-sm font-semibold ${
             value === size ? 'bg-raised text-accent' : 'text-muted hover:text-accent'
           }`}
         >
-          {value}
+          {value === ALL_WORDS ? 'Todas' : value}
         </button>
       ))}
     </div>

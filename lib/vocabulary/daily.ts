@@ -9,11 +9,18 @@ import { read, write } from '@/lib/storage/local';
 import { shuffle } from '@/lib/vocabulary/session';
 import { categoriesOf, isoDate, type Word } from '@/lib/vocabulary/words';
 
-export const SESSION_SIZES = [10, 20, 30] as const;
+/** Every word in the deck: the whole subject, or everything due in today's mix. */
+export const ALL_WORDS = 'all';
+export const SESSION_SIZES = [10, 20, 30, ALL_WORDS] as const;
 export type SessionSize = (typeof SESSION_SIZES)[number];
 
-export const DEFAULT_SESSION_SIZE: SessionSize = 20;
+export const DEFAULT_SESSION_SIZE: SessionSize = ALL_WORDS;
 export const FIRST_SESSION_SIZE: SessionSize = 10;
+
+/** How many cards a size means for a deck of `available` words. */
+export function cardCount(size: SessionSize, available: number): number {
+  return size === ALL_WORDS ? available : size;
+}
 
 /** Seen longer ago than this, a word comes back even if you know it. */
 const STALE_AFTER_DAYS = 7;

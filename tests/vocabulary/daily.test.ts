@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_WORDS,
+  cardCount,
   dailyMix,
   dailyQueue,
   hasPracticed,
@@ -154,5 +156,18 @@ describe('parseSessionSize', () => {
     expect(parseSessionSize(20)).toBe(20);
     expect(parseSessionSize(25)).toBeNull();
     expect(parseSessionSize('20')).toBeNull();
+    expect(parseSessionSize(ALL_WORDS)).toBe(ALL_WORDS);
+  });
+});
+
+describe('cardCount', () => {
+  it('turns "all" into the whole deck and keeps a number as it is', () => {
+    expect(cardCount(ALL_WORDS, 57)).toBe(57);
+    expect(cardCount(20, 57)).toBe(20);
+  });
+
+  it('deals every word of a subject when asked for all', () => {
+    const words = [word('a', 5, 0, YESTERDAY), word('b'), word('c', 0, 1)];
+    expect(topicDeck(words, cardCount(ALL_WORDS, words.length), TODAY)).toHaveLength(3);
   });
 });
