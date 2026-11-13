@@ -13,7 +13,7 @@
  * hard video.
  */
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Check, Copy, Minus, Plus, Translate } from '@phosphor-icons/react';
 import { SEGMENT_SIZES, type SegmentSize } from '@/lib/captions/segmenter';
 import { isRevealed, type SegmentOutcome } from '@/lib/practice/session';
@@ -45,7 +45,12 @@ function timestamp(ms: number): string {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 }
 
-export function TranscriptPanel({
+/**
+ * Memoized: the panel can hold hundreds of blurred lines, and the practice
+ * screen re-renders on every keystroke. Its props only change when a segment
+ * is answered, selected or re-cut.
+ */
+export const TranscriptPanel = memo(function TranscriptPanel({
   segments,
   outcomes,
   currentIndex,
@@ -173,7 +178,7 @@ export function TranscriptPanel({
       <TranslationTooltip id={tooltipId} state={translation.state} />
     </aside>
   );
-}
+});
 
 /**
  * − for shorter pieces, + for longer ones. At either end the button stays

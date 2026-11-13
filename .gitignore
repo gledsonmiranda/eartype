@@ -51,3 +51,6 @@ spike/
 # Corpus de legendas reais: conteúdo de terceiro, fica só na máquina.
 # `npm run corpus` baixa de novo. Ver tests/fixtures/corpus/README.md.
 tests/fixtures/corpus/*.vtt
+
+# Machine-local symlink to .agents/skills (absolute path); recreated by the skills installer.
+/.claude/skills/vercel-react-best-practices

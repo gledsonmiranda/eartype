@@ -115,6 +115,9 @@ export function PracticeScreen({
   const player = useRef<YouTubePlayer | null>(null);
   const playback = useRef<Playback | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  // The pending auto-advance after a clean answer (RF-05). Any other move
+  // cancels it, so a late timer never skips the segment you went to instead.
+  const autoAdvance = useRef<number | null>(null);
 
   const segments = useMemo(
     () => (size === 'long' ? longSegments : segmentAt(cues, size)),
@@ -192,13 +195,23 @@ export function PracticeScreen({
     input.current?.focus();
   }, [session.index]);
 
-  const moveWith = (move: (session: Session) => Session) => {
+  useEffect(() => () => {
+    if (autoAdvance.current !== null) window.clearTimeout(autoAdvance.current);
+  }, []);
+
+  // Stable (refs and setters only), so the memoized transcript panel's
+  // callbacks don't change on every keystroke.
+  const moveWith = useCallback((move: (session: Session) => Session) => {
+    if (autoAdvance.current !== null) {
+      window.clearTimeout(autoAdvance.current);
+      autoAdvance.current = null;
+    }
     playback.current?.cancel();
     setTyped('');
     setResult(null);
     setRevealed(false);
     setSession(move);
-  };
+  }, []);
 
   /**
    * The next segment, or — at the end of the video — the first one still
@@ -215,12 +228,25 @@ export function PracticeScreen({
   };
 
   /** Re-cuts the transcript, keeping what was answered by time (RF-03). */
-  const changeSize = (next: SegmentSize) => {
-    const cut = next === 'long' ? longSegments : segmentAt(cues, next);
-    moveWith((current) => remapSession(current, segments, cut));
-    setSize(next);
-    saveSize(videoId, next);
-  };
+  const changeSize = useCallback(
+    (next: SegmentSize) => {
+      const cut = next === 'long' ? longSegments : segmentAt(cues, next);
+      moveWith((current) => remapSession(current, segments, cut));
+      setSize(next);
+      saveSize(videoId, next);
+    },
+    [longSegments, cues, segments, videoId, moveWith],
+  );
+
+  const toggleShowAll = useCallback(() => setShowAll((current) => !current), []);
+
+  const selectSegment = useCallback(
+    (index: number) => {
+      setResumeOffer(false);
+      moveWith((current) => goToSegment(current, index));
+    },
+    [moveWith],
+  );
 
   /** For a video already done before progress was kept: every open segment counts as typed. */
   const completeRemaining = () => {
@@ -247,7 +273,7 @@ export function PracticeScreen({
 
     if (isPerfect(diff)) {
       setSession((current) => recordOutcome(current, 'correct'));
-      window.setTimeout(advance, AUTO_ADVANCE_MS);
+      autoAdvance.current = window.setTimeout(advance, AUTO_ADVANCE_MS);
       return;
     }
 
@@ -598,25 +624,27 @@ export function PracticeScreen({
           onSizeChange={changeSize}
           currentIndex={session.index}
           showAll={showAll}
-          onToggleShowAll={() => setShowAll((current) => !current)}
-          onSelect={(index) => {
-            setResumeOffer(false);
-            moveWith((current) => goToSegment(current, index));
-          }}
+          onToggleShowAll={toggleShowAll}
+          onSelect={selectSegment}
         />
       </div>
 
-      <footer className="hidden items-center justify-center gap-7 border-t border-line-soft py-4 text-[13px] text-muted sm:flex">
-        <Key keys="↵">verifica</Key>
-        <Key keys="Ctrl ↵">repete</Key>
-        <Key keys="Ctrl Espaço">pausa</Key>
-        <Key keys="Ctrl ↓">próxima palavra</Key>
-        <Key keys="Ctrl →">revela</Key>
-        <Key keys="Alt ← →">navega</Key>
-      </footer>
+      {SHORTCUTS_FOOTER}
     </div>
   );
 }
+
+/** Static, so it is built once instead of on every keystroke. Keep in sync with the README. */
+const SHORTCUTS_FOOTER = (
+  <footer className="hidden items-center justify-center gap-7 border-t border-line-soft py-4 text-[13px] text-muted sm:flex">
+    <Key keys="↵">verifica</Key>
+    <Key keys="Ctrl ↵">repete</Key>
+    <Key keys="Ctrl Espaço">pausa</Key>
+    <Key keys="Ctrl ↓">próxima palavra</Key>
+    <Key keys="Ctrl →">revela</Key>
+    <Key keys="Alt ← →">navega</Key>
+  </footer>
+);
 
 function Key({ keys, children }: { keys: string; children: React.ReactNode }) {
   return (

@@ -6,9 +6,16 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { segment } from '@/lib/captions/segmenter';
 import { listLibrary, loadLibraryVideo } from '@/lib/library/catalog';
 import { LibraryPractice } from './LibraryPractice';
+
+/**
+ * `generateMetadata` and the page both need the video; `cache` makes it one
+ * disk read and one caption parse per request instead of two.
+ */
+const loadVideo = cache((videoId: string) => loadLibraryVideo(videoId));
 
 /**
  * Prerendered at build: the HTML is ready, and the metadata lands in `<head>`
@@ -23,13 +30,13 @@ export async function generateMetadata({
   params,
 }: PageProps<'/library/[videoId]'>): Promise<Metadata> {
   const { videoId } = await params;
-  const video = await loadLibraryVideo(videoId).catch(() => null);
+  const video = await loadVideo(videoId).catch(() => null);
   return { title: video === null ? 'Eartype' : `${video.entry.title} · Eartype` };
 }
 
 export default async function LibraryVideoPage({ params }: PageProps<'/library/[videoId]'>) {
   const { videoId } = await params;
-  const video = await loadLibraryVideo(videoId);
+  const video = await loadVideo(videoId);
   if (video === null) notFound();
 
   const segments = segment(video.cues);
