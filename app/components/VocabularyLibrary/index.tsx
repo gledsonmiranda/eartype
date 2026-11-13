@@ -6,7 +6,7 @@
  * overlay, and "Restaurar" puts the shipped version back.
  */
 
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { ArrowCounterClockwise, Check, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
 import { BUILT_IN, useVocabulary } from '@/app/vocabulary/use-vocabulary';
 import { ALL_CATEGORIES, wordsIn } from '@/lib/vocabulary/session';
@@ -32,10 +32,16 @@ const PRIMARY =
   'flex h-10 items-center justify-center gap-2 rounded-sm bg-accent px-5 text-sm font-semibold text-bg hover:brightness-110 disabled:bg-line disabled:text-muted disabled:hover:brightness-100';
 
 const BUILT_IN_IDS = new Set(BUILT_IN.map((word) => word.id));
+const DIACRITICS = /\p{Diacritic}/gu;
 
 /** Accents don't get in the way of a search: `fogao` finds `fogão`. */
 function fold(text: string): string {
-  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return text.normalize('NFD').replace(DIACRITICS, '').toLowerCase();
+}
+
+/** Every searchable field of a word, folded once — not once per keystroke. */
+function searchText(word: Word): string {
+  return [word.portuguese, word.english, word.present ?? '', ...word.alternatives].map(fold).join('\n');
 }
 
 export function VocabularyLibrary() {
@@ -45,18 +51,15 @@ export function VocabularyLibrary() {
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  const categories = categoriesOf(words);
+  const categories = useMemo(() => categoriesOf(words), [words]);
+  const index = useMemo(() => new Map(words.map((word) => [word.id, searchText(word)])), [words]);
+  // The field updates at once; the list of hundreds of rows catches up after.
+  const deferredQuery = useDeferredValue(query);
   const shown = useMemo(() => {
-    const needle = fold(query.trim());
-    return wordsIn(words, category).filter(
-      (word) =>
-        needle === '' ||
-        fold(word.portuguese).includes(needle) ||
-        fold(word.english).includes(needle) ||
-        fold(word.present ?? '').includes(needle) ||
-        word.alternatives.some((alternative) => fold(alternative).includes(needle)),
-    );
-  }, [words, category, query]);
+    const needle = fold(deferredQuery.trim());
+    const inCategory = wordsIn(words, category);
+    return needle === '' ? inCategory : inCategory.filter((word) => index.get(word.id)?.includes(needle));
+  }, [words, index, category, deferredQuery]);
 
   return (
     <section className="flex flex-col gap-6" aria-labelledby="words-title">
