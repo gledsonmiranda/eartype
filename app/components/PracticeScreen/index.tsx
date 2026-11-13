@@ -14,7 +14,7 @@ import { AddToLibrary } from '@/app/components/AddToLibrary';
 import { AccuracyBadge, DiffView } from '@/app/components/DiffView';
 import { SlotInput } from '@/app/components/SlotInput';
 import { TranscriptPanel } from '@/app/components/TranscriptPanel';
-import { VideoPlayer } from '@/app/components/VideoPlayer';
+import { CaptionBlurToggle, useCaptionBlur, VideoPlayer } from '@/app/components/VideoPlayer';
 import { VideoSettings } from '@/app/components/VideoSettings';
 import { segmentAt, type SegmentSize } from '@/lib/captions/segmenter';
 import { compare, isPerfect, liveCompare } from '@/lib/correction/diff';
@@ -91,6 +91,7 @@ export function PracticeScreen({
   // The − / + in the transcript panel. `long` is the cut the page arrived with.
   const [size, setSize] = useState<SegmentSize>('long');
   const [typed, setTyped] = useState('');
+  const [blurCaptions, toggleBlurCaptions] = useCaptionBlur();
   const [result, setResult] = useState<DiffResult | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [playerError, setPlayerError] = useState<PlayerErrorCode | null>(null);
@@ -392,6 +393,7 @@ export function PracticeScreen({
                 setReady(true);
               }}
               onError={setPlayerError}
+              blurCaptions={blurCaptions}
             />
           </section>
 
@@ -462,13 +464,16 @@ export function PracticeScreen({
                       : `Correção · trecho ${session.index + 1}`
                     : `Ouça e digite · trecho ${session.index + 1}`}
                 </span>
-                {result !== null ? (
-                  <AccuracyBadge accuracy={result.accuracy} />
-                ) : (
-                  <Action onClick={play} keys="Ctrl ↵">
-                    Repetir
-                  </Action>
-                )}
+                <div className="flex items-center gap-2">
+                  <CaptionBlurToggle on={blurCaptions} onToggle={toggleBlurCaptions} />
+                  {result !== null ? (
+                    <AccuracyBadge accuracy={result.accuracy} />
+                  ) : (
+                    <Action onClick={play} keys="Ctrl ↵">
+                      Repetir
+                    </Action>
+                  )}
+                </div>
               </div>
 
               {result === null && (
